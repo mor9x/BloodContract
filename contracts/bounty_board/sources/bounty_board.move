@@ -66,7 +66,7 @@ const MAX_NOTE_BYTES: u64 = 64;
 const MILLIS_PER_DAY: u64 = 86_400_000;
 
 const DEFAULT_INSURANCE_NOTE: vector<u8> =
-    x"e38284e38289e3828ce3819fe38289e38284e3828ae8bf94e38199e38081e5808de8bf94e38197e381a0";
+    b"やられたらやり返す、倍返しだ!";
 
 public struct Board has key {
     id: UID,
