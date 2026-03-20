@@ -27,6 +27,15 @@
 - Keep package ids and endpoints in `packages/frontier-client/src/constants`.
 - Treat `packages/frontier-client` as the only boundary for chain reads.
 
+## Contract Architecture Rules
+
+- Keep `bounty_board` as the local business contract. `killmail` remains a world-package event source, not a local replacement contract.
+- Use standard `init(ctx)` for package initialization. Do not add a custom `initialize(...)` flow for the board.
+- Use `OracleCap` only for verified killmail write-back actions. Do not expand it into a generic admin capability.
+- Prefer explicit shared objects over `dof`-based lookup trees for bounty state.
+- Oracle-side infrastructure is responsible for indexing active bounty objects from emitted events and then passing concrete objects into settlement calls.
+- Delete terminal bounty and insurance objects on-chain and emit close events so oracle indexes can remove them.
+
 ## Coding Style & Naming Conventions
 
 - Use TypeScript everywhere in the app and client package. Prefer 2-space indentation and named exports.

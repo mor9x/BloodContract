@@ -31,7 +31,7 @@ Use this skill to make changes inside the BountyBoard repo without breaking its 
 ## Typical Tasks
 
 - Add or refine the killmail event query: update `graphql/documents`, then expose a small typed function in `queries`.
-- Change killmail contract state: update the Move module, sync the package id, then review the event query and UI assumptions.
+- Change `bounty_board` contract state: update the Move module, keep oracle-facing lifecycle events coherent, sync the package id, then review the killmail query assumptions and UI copy.
 
 ## Validation
 

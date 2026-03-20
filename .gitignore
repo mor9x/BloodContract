@@ -10,6 +10,7 @@ coverage/
 .env.*.local
 
 contracts/**/build/
+contracts/**/Move.lock
 contracts/**/.package_lock
 contracts/**/coverage/
 contracts/**/.sui/

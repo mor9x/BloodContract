@@ -11,12 +11,13 @@ export function HomePage() {
           <section>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-orange-400">EVE Frontier Utopia</p>
             <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-tight text-white">
-              Killmail-fed bounty board scaffold for the Frontier dapp
+              Killmail-fed bounty board for the Frontier dapp
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300">
               This workspace keeps `bounty_board` as the local business package and uses world killmail events as the
-              current external event feed. Frontend configuration carries both the world package and the local
-              `bounty_board` package, so reward and claim flows can be added on top of the same scaffold.
+              oracle-fed trigger source. The Move package now carries real single-kill, multi-kill, and insurance-order
+              flows, while frontend configuration keeps both the world package and the local `bounty_board` package in
+              view.
             </p>
             <dl className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
@@ -40,10 +41,10 @@ export function HomePage() {
           <section className="rounded-[2rem] border border-orange-400/20 bg-orange-400/10 p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-200">Current Scope</p>
             <ol className="mt-4 space-y-3 text-sm leading-6 text-orange-50/90">
-              <li>Use world killmail events as the current external trigger and verification feed.</li>
-              <li>Keep the local Move package as a runnable `bounty_board` business skeleton.</li>
-              <li>Run `bun run sync:addresses` to update the local `bounty_board` package id after deployment.</li>
-              <li>Read killmail events directly from `worldPackageId`, not from a separate local contract.</li>
+              <li>Use world killmail events as the external trigger feed and oracle input.</li>
+              <li>Keep local bounty state in `bounty_board` with `init`, `OracleCap`, and explicit shared objects.</li>
+              <li>Support `SingleKill`, `MultiKill`, and insurance orders that spawn regular bounties on trigger.</li>
+              <li>Run `bun run sync:addresses` after publishing to refresh the local `bounty_board` package id.</li>
             </ol>
           </section>
         </div>

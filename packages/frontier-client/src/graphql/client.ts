@@ -3,13 +3,15 @@ import type { GraphQLRequest, GraphQLResponse } from "../types/graphql";
 export type GraphQLClientConfig = {
   endpoint: string;
   headers?: HeadersInit;
+  fetch?: typeof fetch;
 };
 
 export async function requestGraphQL<TData, TVariables extends Record<string, unknown> = Record<string, never>>(
   config: GraphQLClientConfig,
   request: GraphQLRequest<TVariables>
 ): Promise<TData> {
-  const response = await fetch(config.endpoint, {
+  const fetchImpl = config.fetch ?? fetch;
+  const response = await fetchImpl(config.endpoint, {
     method: "POST",
     headers: {
       "content-type": "application/json",

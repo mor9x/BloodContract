@@ -2,7 +2,7 @@ import { requestGraphQL, type GraphQLClientConfig } from "../graphql/client";
 import { GET_KILLMAIL_CREATED_EVENTS } from "../graphql/documents/killmail";
 import { toConnectionPage } from "../graphql/pagination";
 import type { ConnectionPage, PageInfo } from "../types/graphql";
-import type { KillmailEvent } from "../types/killmail";
+import type { KillmailEvent, TenantItemIdJson } from "../types/killmail";
 
 export type QueryKillmailEventsArgs = {
   packageId: string;
@@ -35,12 +35,47 @@ export function getKillmailCreatedEventType(packageId: string) {
   return `${packageId}::killmail::KillmailCreatedEvent`;
 }
 
+function toNullableNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function toTenantItemId(value: unknown): TenantItemIdJson | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  return {
+    itemId: toNullableNumber(record.item_id),
+    tenant: typeof record.tenant === "string" ? record.tenant : null
+  };
+}
+
 function mapKillmailEvent(node: KillmailEventNode): KillmailEvent {
+  const contentsJson = node.contents?.json ?? {};
+  const killmailItemId = toTenantItemId(contentsJson.key)?.itemId ?? null;
+
   return {
     eventType: node.eventType ?? "",
     timestamp: node.timestamp ?? null,
     digest: node.transactionBlock?.digest ?? null,
-    contentsJson: node.contents?.json ?? {}
+    killmailItemId,
+    killerId: toTenantItemId(contentsJson.killer_id),
+    victimId: toTenantItemId(contentsJson.victim_id),
+    reportedByCharacterId: toTenantItemId(contentsJson.reported_by_character_id),
+    solarSystemId: toTenantItemId(contentsJson.solar_system_id),
+    lossType: typeof contentsJson.loss_type === "string" ? contentsJson.loss_type : null,
+    killTimestamp: toNullableNumber(contentsJson.kill_timestamp),
+    contentsJson
   };
 }
 

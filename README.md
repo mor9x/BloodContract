@@ -1,6 +1,6 @@
 # BountyBoard
 
-BountyBoard is an EVE Frontier dapp scaffold for the Utopia environment. The current codebase is intentionally narrow: it keeps a minimal `bounty_board` Move business package skeleton and a GraphQL client focused on world killmail events as the current external event feed.
+BountyBoard is an EVE Frontier hackathon project for Utopia. The repo now contains a real `bounty_board` Move package with oracle-driven settlement flows, plus a GraphQL client focused on world killmail events as the external trigger feed.
 
 ## Introduction
 
@@ -9,9 +9,9 @@ Star Hunter Bounty Board is a player-driven bounty system for EVE Frontier.
 The core loop is simple:
 
 - A player places a bounty on another player.
-- The reward is locked into a contract as tokens, items, or NFTs.
-- Other players accept the bounty.
-- If the target is successfully killed, the hunter receives the reward.
+- The reward is locked into a contract as tokens.
+- Oracle logic watches killmail events from the world package.
+- When a matching killmail is verified, the hunter can claim the reward on-chain.
 
 That simple structure creates a strong PvP loop where every player can become both a hunter and a target. The system is intentionally lightweight, but it is designed to make PvP more dynamic, social, and fun.
 
@@ -27,7 +27,7 @@ That simple structure creates a strong PvP loop where every player can become bo
 
 - `apps/dapp`: the only frontend application
 - `packages/frontier-client`: GraphQL client, killmail event query, and Utopia constants
-- `contracts/bounty_board`: minimal Move package and tests for the local business skeleton
+- `contracts/bounty_board`: the local Move business package and tests
 - `scripts`: small repository utilities such as address syncing
 - `skills/eve-frontier-utopia`: repository-local skill for agent-assisted development
 - `AGENTS.md`: repository-level collaboration and implementation rules
@@ -38,7 +38,7 @@ That simple structure creates a strong PvP loop where every player can become bo
 - Use Sui testnet only.
 - Read chain data through GraphQL.
 - Keep both `worldPackageId` and `bountyBoardPackageId` available to the frontend.
-- Treat world killmail events as the current external trigger and verification feed.
+- Treat world killmail events as the external trigger and verification feed.
 - Keep GraphQL documents and query logic inside `packages/frontier-client`.
 - Do not place raw GraphQL queries directly in React pages or components.
 
@@ -76,7 +76,8 @@ Notes:
 2. Run `sui move test` or `bun run test:move`.
 3. Publish to Utopia testnet when ready.
 4. Sync the new `bounty_board` package id with `bun run sync:addresses`.
-5. Update the killmail event query and dapp views as needed.
+5. Update oracle-side matching rules and the killmail event query as needed.
+6. Update the dapp views after settlement or claim flow changes.
 
 ## Collaboration Notes
 
