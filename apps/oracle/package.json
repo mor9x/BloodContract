@@ -1,0 +1,16 @@
+{
+  "name": "@bounty-board/oracle",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --env-file=../../.env.local --watch src/main.ts",
+    "start": "bun --env-file=../../.env.local run src/main.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src test --ext .ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@bounty-board/frontier-client": "workspace:*",
+    "@mysten/sui": "2.9.1"
+  }
+}

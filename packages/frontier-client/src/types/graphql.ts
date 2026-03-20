@@ -3,8 +3,14 @@ export type PageInfo = {
   endCursor: string | null;
 };
 
+export type ConnectionEdge<T> = {
+  cursor: string;
+  node: T;
+};
+
 export type ConnectionPage<T> = {
   nodes: T[];
+  edges: ConnectionEdge<T>[];
   pageInfo: PageInfo;
 };
 

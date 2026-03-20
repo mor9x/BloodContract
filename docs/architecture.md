@@ -2,7 +2,12 @@
 
 ## Read Path
 
-The dapp reads chain data through `packages/frontier-client`. GraphQL request code lives in `src/graphql`, and the only application-facing query currently exposed is the killmail event feed. Frontend configuration carries both the world package id for killmail events and the local `bounty_board` package id for business flows.
+The dapp reads chain data through `packages/frontier-client`. GraphQL request code lives in `src/graphql`, and the client now exposes two read paths:
+
+- GraphQL event queries for killmail and bounty lifecycle feeds
+- direct RPC object reads for the current `Board` registry state
+
+Frontend configuration carries both the world package id for killmail events and the local `bounty_board` package id for business flows.
 
 Killmail matching is intentionally split off-chain:
 
@@ -13,7 +18,7 @@ Killmail matching is intentionally split off-chain:
 
 ## Write Path
 
-The local write surface lives in `contracts/bounty_board`. The package uses a standard `init` function to publish a shared `Board` and transfer an `OracleCap` to the deployer. Oracle authority is scoped to writing back verified killmail outcomes only; it is not a general admin role.
+The local write surface lives in `contracts/bounty_board`. The package uses a standard `init` function to publish a shared `Board` registry and transfer an `OracleCap` to the deployer. `Board` is not a generic admin root; it holds board-level config and the active object registry so the current on-chain state can be inspected without relying only on event replay. Oracle authority is scoped to writing back verified killmail outcomes only; it is not a general admin role.
 
 The current on-chain business objects are:
 
@@ -24,6 +29,7 @@ The current on-chain business objects are:
 Important constraints:
 
 - No `dof` or on-chain search layer is used.
+- `Board` acts as a small registry/config root, not as a funds container.
 - Oracle calls operate on explicit shared objects instead of lookup keys.
 - Single-kill and multi-kill both accumulate `claimable` balances per hunter.
 - Insurance orders do not pay out directly; they trigger the creation of a normal bounty targeting the killer and inherit the remaining validity window.

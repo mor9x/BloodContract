@@ -1,5 +1,5 @@
-export const GET_KILLMAIL_CREATED_EVENTS = /* GraphQL */ `
-  query GetKillmailCreatedEvents($eventType: String!, $first: Int, $after: String) {
+export const GET_EVENTS_BY_TYPE = /* GraphQL */ `
+  query GetEventsByType($eventType: String!, $first: Int, $after: String) {
     events(filter: { type: $eventType }, first: $first, after: $after) {
       edges {
         cursor

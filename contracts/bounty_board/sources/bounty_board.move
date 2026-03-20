@@ -63,13 +63,20 @@ const MAX_DURATION_DAYS: u64 = 365;
 const MIN_TARGET_KILLS: u64 = 2;
 const MAX_TARGET_KILLS: u64 = 1000;
 const MAX_NOTE_BYTES: u64 = 64;
+const BOARD_SCHEMA_VERSION: u64 = 1;
 const MILLIS_PER_DAY: u64 = 86_400_000;
 
-const DEFAULT_INSURANCE_NOTE: vector<u8> =
-    b"やられたらやり返す、倍返しだ!";
+const DEFAULT_INSURANCE_NOTE: vector<u8> = b"やられたらやり返す、倍返しだ!";
 
 public struct Board has key {
     id: UID,
+    schema_version: u64,
+    min_duration_days: u64,
+    max_duration_days: u64,
+    max_note_bytes: u64,
+    active_single_bounty_ids: vector<ID>,
+    active_multi_bounty_ids: vector<ID>,
+    active_insurance_order_ids: vector<ID>,
 }
 
 public struct OracleCap has key, store {
@@ -211,6 +218,13 @@ public struct InsuranceClosedEvent has copy, drop {
 fun init(ctx: &mut TxContext) {
     transfer::share_object(Board {
         id: object::new(ctx),
+        schema_version: BOARD_SCHEMA_VERSION,
+        min_duration_days: MIN_DURATION_DAYS,
+        max_duration_days: MAX_DURATION_DAYS,
+        max_note_bytes: MAX_NOTE_BYTES,
+        active_single_bounty_ids: vector[],
+        active_multi_bounty_ids: vector[],
+        active_insurance_order_ids: vector[],
     });
     transfer::transfer(OracleCap {
         id: object::new(ctx),
@@ -232,8 +246,48 @@ public fun spawn_single(): u8 { MODE_SINGLE }
 
 public fun spawn_multi(): u8 { MODE_MULTI }
 
+public fun board_schema_version(board: &Board): u64 {
+    board.schema_version
+}
+
+public fun board_min_duration_days(board: &Board): u64 {
+    board.min_duration_days
+}
+
+public fun board_max_duration_days(board: &Board): u64 {
+    board.max_duration_days
+}
+
+public fun board_max_note_bytes(board: &Board): u64 {
+    board.max_note_bytes
+}
+
+public fun active_single_bounty_count(board: &Board): u64 {
+    vector::length(&board.active_single_bounty_ids)
+}
+
+public fun active_multi_bounty_count(board: &Board): u64 {
+    vector::length(&board.active_multi_bounty_ids)
+}
+
+public fun active_insurance_order_count(board: &Board): u64 {
+    vector::length(&board.active_insurance_order_ids)
+}
+
+public fun active_single_bounty_id_at(board: &Board, index: u64): ID {
+    *vector::borrow(&board.active_single_bounty_ids, index)
+}
+
+public fun active_multi_bounty_id_at(board: &Board, index: u64): ID {
+    *vector::borrow(&board.active_multi_bounty_ids, index)
+}
+
+public fun active_insurance_order_id_at(board: &Board, index: u64): ID {
+    *vector::borrow(&board.active_insurance_order_ids, index)
+}
+
 public fun create_single_bounty<T>(
-    board: &Board,
+    board: &mut Board,
     poster: &Character,
     target: &Character,
     reward: Coin<T>,
@@ -244,9 +298,9 @@ public fun create_single_bounty<T>(
     ctx: &mut TxContext,
 ) {
     assert_sender_controls_character(poster, ctx);
-    assert_valid_duration(duration_days);
+    assert_valid_duration(board, duration_days);
     assert_valid_loss_filter(loss_filter);
-    assert_valid_note(&note);
+    assert_valid_note(board, &note);
 
     let reward_amount = coin::value(&reward);
     assert!(reward_amount > 0, ERewardEmpty);
@@ -269,6 +323,7 @@ public fun create_single_bounty<T>(
         used_killmail_item_ids: vector[],
     };
     let pool_id = object::id(&pool);
+    register_single_bounty(board, pool_id);
     event::emit(SingleBountyCreatedEvent {
         bounty_id: pool_id,
         board_id: pool.board_id,
@@ -282,6 +337,7 @@ public fun create_single_bounty<T>(
 }
 
 public fun fund_single_bounty<T>(
+    board: &Board,
     pool: SingleBountyPool<T>,
     poster: &Character,
     reward: Coin<T>,
@@ -291,8 +347,8 @@ public fun fund_single_bounty<T>(
     ctx: &mut TxContext,
 ) {
     assert_sender_controls_character(poster, ctx);
-    assert_valid_duration(duration_days);
-    assert_valid_note(&note);
+    assert_valid_duration(board, duration_days);
+    assert_valid_note(board, &note);
 
     let reward_amount = coin::value(&reward);
     assert!(reward_amount > 0, ERewardEmpty);
@@ -342,6 +398,7 @@ public fun settle_single_bounty<T>(
 }
 
 public fun claim_single_bounty<T>(
+    board: &mut Board,
     pool: SingleBountyPool<T>,
     hunter: &Character,
     ctx: &mut TxContext,
@@ -354,10 +411,11 @@ public fun claim_single_bounty<T>(
 
     let payout = balance::split(&mut pool.reward_balance, claim_amount).into_coin(ctx);
     transfer::public_transfer(payout, ctx.sender());
-    finish_single_pool_if_possible(pool);
+    finish_single_pool_if_possible(board, pool);
 }
 
 public fun refund_expired_single_contribution<T>(
+    board: &mut Board,
     pool: SingleBountyPool<T>,
     poster: &Character,
     clock: &Clock,
@@ -373,11 +431,11 @@ public fun refund_expired_single_contribution<T>(
 
     let refund = balance::split(&mut pool.reward_balance, refund_amount).into_coin(ctx);
     transfer::public_transfer(refund, ctx.sender());
-    finish_single_pool_if_possible(pool);
+    finish_single_pool_if_possible(board, pool);
 }
 
 public fun create_multi_bounty<T>(
-    board: &Board,
+    board: &mut Board,
     poster: &Character,
     target: &Character,
     reward: Coin<T>,
@@ -389,10 +447,10 @@ public fun create_multi_bounty<T>(
     ctx: &mut TxContext,
 ) {
     assert_sender_controls_character(poster, ctx);
-    assert_valid_duration(duration_days);
+    assert_valid_duration(board, duration_days);
     assert_valid_loss_filter(loss_filter);
     assert_valid_target_kills(target_kills);
-    assert_valid_note(&note);
+    assert_valid_note(board, &note);
 
     let reward_amount = coin::value(&reward);
     assert!(reward_amount > 0, ERewardEmpty);
@@ -417,6 +475,7 @@ public fun create_multi_bounty<T>(
         contributions,
         used_killmail_item_ids: vector[],
     };
+    register_multi_bounty(board, object::id(&pool));
     event::emit(MultiBountyCreatedEvent {
         bounty_id: object::id(&pool),
         board_id: pool.board_id,
@@ -432,6 +491,7 @@ public fun create_multi_bounty<T>(
 }
 
 public fun fund_multi_bounty<T>(
+    board: &Board,
     pool: MultiBountyPool<T>,
     poster: &Character,
     reward: Coin<T>,
@@ -441,8 +501,8 @@ public fun fund_multi_bounty<T>(
     ctx: &mut TxContext,
 ) {
     assert_sender_controls_character(poster, ctx);
-    assert_valid_duration(duration_days);
-    assert_valid_note(&note);
+    assert_valid_duration(board, duration_days);
+    assert_valid_note(board, &note);
 
     let reward_amount = coin::value(&reward);
     assert!(reward_amount > 0, ERewardEmpty);
@@ -499,6 +559,7 @@ public fun record_multi_kill<T>(
 }
 
 public fun claim_multi_bounty<T>(
+    board: &mut Board,
     pool: MultiBountyPool<T>,
     hunter: &Character,
     ctx: &mut TxContext,
@@ -511,10 +572,11 @@ public fun claim_multi_bounty<T>(
 
     let payout = balance::split(&mut pool.reward_balance, claim_amount).into_coin(ctx);
     transfer::public_transfer(payout, ctx.sender());
-    finish_multi_pool_if_possible(pool);
+    finish_multi_pool_if_possible(board, pool);
 }
 
 public fun refund_expired_multi_contribution<T>(
+    board: &mut Board,
     pool: MultiBountyPool<T>,
     poster: &Character,
     clock: &Clock,
@@ -530,11 +592,11 @@ public fun refund_expired_multi_contribution<T>(
 
     let refund = balance::split(&mut pool.reward_balance, refund_amount).into_coin(ctx);
     transfer::public_transfer(refund, ctx.sender());
-    finish_multi_pool_if_possible(pool);
+    finish_multi_pool_if_possible(board, pool);
 }
 
 public fun create_insurance_order<T>(
-    board: &Board,
+    board: &mut Board,
     insured: &Character,
     reward: Coin<T>,
     duration_days: u64,
@@ -546,12 +608,12 @@ public fun create_insurance_order<T>(
     ctx: &mut TxContext,
 ) {
     assert_sender_controls_character(insured, ctx);
-    assert_valid_duration(duration_days);
+    assert_valid_duration(board, duration_days);
     assert_valid_loss_filter(loss_filter);
     assert_valid_spawn_mode(spawn_mode, spawn_target_kills);
 
     let note = normalize_insurance_note(note);
-    assert_valid_note(&note);
+    assert_valid_note(board, &note);
 
     let reward_amount = coin::value(&reward);
     assert!(reward_amount > 0, ERewardEmpty);
@@ -570,6 +632,7 @@ public fun create_insurance_order<T>(
         spawn_mode,
         spawn_target_kills,
     };
+    register_insurance_order(board, object::id(&order));
     event::emit(InsuranceCreatedEvent {
         order_id: object::id(&order),
         board_id: order.board_id,
@@ -585,6 +648,7 @@ public fun create_insurance_order<T>(
 }
 
 public fun fund_insurance_order<T>(
+    board: &Board,
     order: InsuranceOrder<T>,
     insured: &Character,
     reward: Coin<T>,
@@ -594,8 +658,8 @@ public fun fund_insurance_order<T>(
     ctx: &mut TxContext,
 ) {
     assert_sender_controls_character(insured, ctx);
-    assert_valid_duration(duration_days);
-    assert_valid_note(&note);
+    assert_valid_duration(board, duration_days);
+    assert_valid_note(board, &note);
 
     let reward_amount = coin::value(&reward);
     assert!(reward_amount > 0, ERewardEmpty);
@@ -620,6 +684,7 @@ public fun fund_insurance_order<T>(
 }
 
 public fun trigger_insurance_order<T>(
+    board: &mut Board,
     _: &OracleCap,
     order: InsuranceOrder<T>,
     killer: &Character,
@@ -631,9 +696,9 @@ public fun trigger_insurance_order<T>(
     assert!(clock.timestamp_ms() < order.expires_at_ms, EInsuranceExpired);
 
     let generated_bounty_id = if (order.spawn_mode == MODE_SINGLE) {
-        spawn_single_from_insurance(&mut order, killer, killmail_item_id, ctx)
+        spawn_single_from_insurance(board, &mut order, killer, killmail_item_id, ctx)
     } else {
-        spawn_multi_from_insurance(&mut order, killer, killmail_item_id, ctx)
+        spawn_multi_from_insurance(board, &mut order, killer, killmail_item_id, ctx)
     };
 
     event::emit(InsuranceTriggeredEvent {
@@ -648,10 +713,12 @@ public fun trigger_insurance_order<T>(
     event::emit(InsuranceClosedEvent {
         order_id: object::id(&order),
     });
+    unregister_insurance_order(board, object::id(&order));
     destroy_insurance_order(order);
 }
 
 public fun refund_expired_insurance<T>(
+    board: &mut Board,
     order: InsuranceOrder<T>,
     insured: &Character,
     clock: &Clock,
@@ -669,6 +736,7 @@ public fun refund_expired_insurance<T>(
     event::emit(InsuranceClosedEvent {
         order_id: object::id(&order),
     });
+    unregister_insurance_order(board, object::id(&order));
     destroy_insurance_order(order);
 }
 
@@ -695,6 +763,7 @@ public fun insurance_note_length<T>(order: &InsuranceOrder<T>): u64 {
 }
 
 fun spawn_single_from_insurance<T>(
+    board: &mut Board,
     order: &mut InsuranceOrder<T>,
     killer: &Character,
     killmail_item_id: u64,
@@ -718,6 +787,7 @@ fun spawn_single_from_insurance<T>(
         used_killmail_item_ids: vector[killmail_item_id],
     };
     let pool_id = object::id(&pool);
+    register_single_bounty(board, pool_id);
     event::emit(SingleBountyCreatedEvent {
         bounty_id: pool_id,
         board_id: pool.board_id,
@@ -732,6 +802,7 @@ fun spawn_single_from_insurance<T>(
 }
 
 fun spawn_multi_from_insurance<T>(
+    board: &mut Board,
     order: &mut InsuranceOrder<T>,
     killer: &Character,
     killmail_item_id: u64,
@@ -759,6 +830,7 @@ fun spawn_multi_from_insurance<T>(
         used_killmail_item_ids: vector[killmail_item_id],
     };
     let pool_id = object::id(&pool);
+    register_multi_bounty(board, pool_id);
     event::emit(MultiBountyCreatedEvent {
         bounty_id: pool_id,
         board_id: pool.board_id,
@@ -774,22 +846,26 @@ fun spawn_multi_from_insurance<T>(
     pool_id
 }
 
-fun finish_single_pool_if_possible<T>(pool: SingleBountyPool<T>) {
+fun finish_single_pool_if_possible<T>(board: &mut Board, pool: SingleBountyPool<T>) {
     if (can_destroy_single_pool(&pool)) {
+        let pool_id = object::id(&pool);
         event::emit(SingleBountyClosedEvent {
-            bounty_id: object::id(&pool),
+            bounty_id: pool_id,
         });
+        unregister_single_bounty(board, pool_id);
         destroy_single_pool(pool);
     } else {
         transfer::share_object(pool);
     }
 }
 
-fun finish_multi_pool_if_possible<T>(pool: MultiBountyPool<T>) {
+fun finish_multi_pool_if_possible<T>(board: &mut Board, pool: MultiBountyPool<T>) {
     if (can_destroy_multi_pool(&pool)) {
+        let pool_id = object::id(&pool);
         event::emit(MultiBountyClosedEvent {
-            bounty_id: object::id(&pool),
+            bounty_id: pool_id,
         });
+        unregister_multi_bounty(board, pool_id);
         destroy_multi_pool(pool);
     } else {
         transfer::share_object(pool);
@@ -870,9 +946,9 @@ fun assert_sender_controls_character(character: &Character, ctx: &TxContext) {
     assert!(character::character_address(character) == ctx.sender(), ECharacterOwnerMismatch);
 }
 
-fun assert_valid_duration(duration_days: u64) {
+fun assert_valid_duration(board: &Board, duration_days: u64) {
     assert!(
-        duration_days >= MIN_DURATION_DAYS && duration_days <= MAX_DURATION_DAYS,
+        duration_days >= board.min_duration_days && duration_days <= board.max_duration_days,
         EDurationDaysOutOfRange,
     );
 }
@@ -900,8 +976,8 @@ fun assert_valid_spawn_mode(spawn_mode: u8, spawn_target_kills: u64) {
     };
 }
 
-fun assert_valid_note(note: &String) {
-    assert!(string::length(note) <= MAX_NOTE_BYTES, ENoteTooLong);
+fun assert_valid_note(board: &Board, note: &String) {
+    assert!(string::length(note) <= board.max_note_bytes, ENoteTooLong);
 }
 
 fun next_expiry(clock: &Clock, duration_days: u64): u64 {
@@ -920,6 +996,42 @@ fun replace_note_if_present(current: &mut String, next: String) {
 
 fun coin_type_name<T>(): AsciiString {
     type_name::with_defining_ids<T>().into_string()
+}
+
+fun register_single_bounty(board: &mut Board, bounty_id: ID) {
+    board.active_single_bounty_ids.push_back(bounty_id);
+}
+
+fun register_multi_bounty(board: &mut Board, bounty_id: ID) {
+    board.active_multi_bounty_ids.push_back(bounty_id);
+}
+
+fun register_insurance_order(board: &mut Board, order_id: ID) {
+    board.active_insurance_order_ids.push_back(order_id);
+}
+
+fun unregister_single_bounty(board: &mut Board, bounty_id: ID) {
+    remove_id(&mut board.active_single_bounty_ids, bounty_id);
+}
+
+fun unregister_multi_bounty(board: &mut Board, bounty_id: ID) {
+    remove_id(&mut board.active_multi_bounty_ids, bounty_id);
+}
+
+fun unregister_insurance_order(board: &mut Board, order_id: ID) {
+    remove_id(&mut board.active_insurance_order_ids, order_id);
+}
+
+fun remove_id(ids: &mut vector<ID>, target: ID) {
+    let len = vector::length(ids);
+    let mut i = 0;
+    while (i < len) {
+        if (*vector::borrow(ids, i) == target) {
+            let _ = vector::remove(ids, i);
+            return
+        };
+        i = i + 1;
+    };
 }
 
 fun upsert_amount(map: &mut VecMap<TenantItemId, u64>, key: TenantItemId, amount: u64) {

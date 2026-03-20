@@ -26,7 +26,8 @@ That simple structure creates a strong PvP loop where every player can become bo
 ## Repository Layout
 
 - `apps/dapp`: the only frontend application
-- `packages/frontier-client`: GraphQL client, killmail event query, and Utopia constants
+- `apps/oracle`: Bun watcher/relayer that listens to bounty and killmail events
+- `packages/frontier-client`: GraphQL event queries, board-state reads, and Utopia constants
 - `contracts/bounty_board`: the local Move business package and tests
 - `scripts`: small repository utilities such as address syncing
 - `skills/eve-frontier-utopia`: repository-local skill for agent-assisted development
@@ -37,6 +38,7 @@ That simple structure creates a strong PvP loop where every player can become bo
 - Use Utopia only for development and debugging.
 - Use Sui testnet only.
 - Read chain data through GraphQL.
+- Read `Board` registry state through `packages/frontier-client` RPC helpers when current on-chain truth is needed.
 - Keep both `worldPackageId` and `bountyBoardPackageId` available to the frontend.
 - Treat world killmail events as the external trigger and verification feed.
 - Keep GraphQL documents and query logic inside `packages/frontier-client`.
@@ -58,6 +60,8 @@ The default frontend entrypoint is `apps/dapp`.
 ```bash
 bun run dev
 bun run build
+bun run oracle:dev
+bun run oracle:start
 bun run typecheck
 bun run lint
 bun run test
@@ -78,6 +82,33 @@ Notes:
 4. Sync the new `bounty_board` package id with `bun run sync:addresses`.
 5. Update oracle-side matching rules and the killmail event query as needed.
 6. Update the dapp views after settlement or claim flow changes.
+
+## Oracle Service
+
+The oracle is a Bun service in `apps/oracle`.
+
+- It reads `bounty_board` lifecycle events and `world::killmail::KillmailCreatedEvent` through GraphQL.
+- It stores cursors and active object indexes in SQLite.
+- It writes back on-chain using `OracleCap`.
+- It uses the shared `Board` object as a small registry/config root for active bounty and insurance state.
+- It exposes `/healthz` and `/readyz`.
+
+Local commands:
+
+```bash
+bun run oracle:dev
+bun run oracle:start
+bun run oracle:typecheck
+bun run oracle:test
+```
+
+Required oracle env:
+
+- `BOARD_ID`
+- `WORLD_OBJECT_REGISTRY_ID`
+- `BOUNTY_BOARD_PACKAGE_ID`
+- `ORACLE_CAP_ID`
+- `ORACLE_PRIVATE_KEY`
 
 ## Collaboration Notes
 

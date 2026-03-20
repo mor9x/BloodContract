@@ -9,5 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "bun test"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.45.2"
   }
 }

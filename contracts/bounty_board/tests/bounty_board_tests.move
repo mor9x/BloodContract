@@ -29,7 +29,7 @@ const USER_A: address = @0xC;
 const USER_B: address = @0xD;
 const USER_C: address = @0xE;
 const TRIBE_ID: u32 = 100;
-const INSURANCE_DEFAULT_NOTE_BYTES: u64 = 42;
+const INSURANCE_DEFAULT_NOTE_BYTES: u64 = 43;
 const MILLIS_PER_DAY: u64 = 86_400_000;
 
 public struct RewardToken has drop {}
@@ -112,6 +112,10 @@ fun init_creates_board_and_oracle_cap() {
     {
         let board = ts::take_shared<Board>(&ts);
         let oracle = ts::take_from_sender<OracleCap>(&ts);
+        assert!(bounty_board::board_schema_version(&board) == 1, 0);
+        assert!(bounty_board::board_min_duration_days(&board) == 7, 1);
+        assert!(bounty_board::board_max_duration_days(&board) == 365, 2);
+        assert!(bounty_board::board_max_note_bytes(&board) == 64, 3);
         ts::return_shared(board);
         ts::return_to_sender(&ts, oracle);
     };
@@ -128,13 +132,13 @@ fun single_bounty_settle_and_claim() {
 
     ts::next_tx(&mut ts, USER_A);
     {
-        let board = ts::take_shared<Board>(&ts);
+        let mut board = ts::take_shared<Board>(&ts);
         let poster = ts::take_shared_by_id<Character>(&ts, hunter_id);
         let target = ts::take_shared_by_id<Character>(&ts, target_id);
         let clock = clock::create_for_testing(ts::ctx(&mut ts));
 
         bounty_board::create_single_bounty(
-            &board,
+            &mut board,
             &poster,
             &target,
             test_coin(1_000, ts::ctx(&mut ts)),
@@ -145,6 +149,7 @@ fun single_bounty_settle_and_claim() {
             ts::ctx(&mut ts),
         );
 
+        assert!(bounty_board::active_single_bounty_count(&board) == 1, 4);
         clock.destroy_for_testing();
         ts::return_shared(target);
         ts::return_shared(poster);
@@ -173,13 +178,16 @@ fun single_bounty_settle_and_claim() {
 
     ts::next_tx(&mut ts, USER_A);
     {
+        let mut board = ts::take_shared<Board>(&ts);
         let pool = ts::take_shared<SingleBountyPool<RewardToken>>(&ts);
         let hunter = ts::take_shared_by_id<Character>(&ts, hunter_id);
 
         assert!(bounty_board::single_claimable_amount(&pool, &hunter) == 1_000, 0);
-        bounty_board::claim_single_bounty(pool, &hunter, ts::ctx(&mut ts));
+        bounty_board::claim_single_bounty(&mut board, pool, &hunter, ts::ctx(&mut ts));
 
         ts::return_shared(hunter);
+        assert!(bounty_board::active_single_bounty_count(&board) == 0, 5);
+        ts::return_shared(board);
     };
 
     ts::next_tx(&mut ts, USER_A);
@@ -202,13 +210,13 @@ fun multi_bounty_records_claimable_reward_and_refunds() {
 
     ts::next_tx(&mut ts, USER_A);
     {
-        let board = ts::take_shared<Board>(&ts);
+        let mut board = ts::take_shared<Board>(&ts);
         let poster = ts::take_shared_by_id<Character>(&ts, poster_id);
         let target = ts::take_shared_by_id<Character>(&ts, target_id);
         let clock = clock::create_for_testing(ts::ctx(&mut ts));
 
         bounty_board::create_multi_bounty(
-            &board,
+            &mut board,
             &poster,
             &target,
             test_coin(1_000, ts::ctx(&mut ts)),
@@ -220,6 +228,7 @@ fun multi_bounty_records_claimable_reward_and_refunds() {
             ts::ctx(&mut ts),
         );
 
+        assert!(bounty_board::active_multi_bounty_count(&board) == 1, 6);
         clock.destroy_for_testing();
         ts::return_shared(target);
         ts::return_shared(poster);
@@ -248,14 +257,16 @@ fun multi_bounty_records_claimable_reward_and_refunds() {
 
     ts::next_tx(&mut ts, USER_A);
     {
+        let mut board = ts::take_shared<Board>(&ts);
         let pool = ts::take_shared<MultiBountyPool<RewardToken>>(&ts);
         let hunter = ts::take_shared_by_id<Character>(&ts, poster_id);
 
         assert!(bounty_board::multi_recorded_kills(&pool) == 1, 3);
         assert!(bounty_board::multi_claimable_amount(&pool, &hunter) == 100, 4);
-        bounty_board::claim_multi_bounty(pool, &hunter, ts::ctx(&mut ts));
+        bounty_board::claim_multi_bounty(&mut board, pool, &hunter, ts::ctx(&mut ts));
 
         ts::return_shared(hunter);
+        ts::return_shared(board);
     };
 
     ts::next_tx(&mut ts, USER_A);
@@ -268,15 +279,18 @@ fun multi_bounty_records_claimable_reward_and_refunds() {
 
     ts::next_tx(&mut ts, USER_A);
     {
+        let mut board = ts::take_shared<Board>(&ts);
         let pool = ts::take_shared<MultiBountyPool<RewardToken>>(&ts);
         let poster = ts::take_shared_by_id<Character>(&ts, poster_id);
         let mut clock = clock::create_for_testing(ts::ctx(&mut ts));
         clock.set_for_testing(8 * MILLIS_PER_DAY);
 
-        bounty_board::refund_expired_multi_contribution(pool, &poster, &clock, ts::ctx(&mut ts));
+        bounty_board::refund_expired_multi_contribution(&mut board, pool, &poster, &clock, ts::ctx(&mut ts));
 
         clock.destroy_for_testing();
         ts::return_shared(poster);
+        assert!(bounty_board::active_multi_bounty_count(&board) == 0, 7);
+        ts::return_shared(board);
     };
 
     ts::next_tx(&mut ts, USER_A);
@@ -300,12 +314,12 @@ fun insurance_trigger_spawns_regular_bounty() {
 
     ts::next_tx(&mut ts, USER_A);
     {
-        let board = ts::take_shared<Board>(&ts);
+        let mut board = ts::take_shared<Board>(&ts);
         let insured = ts::take_shared_by_id<Character>(&ts, insured_id);
         let clock = clock::create_for_testing(ts::ctx(&mut ts));
 
         bounty_board::create_insurance_order(
-            &board,
+            &mut board,
             &insured,
             test_coin(2_000, ts::ctx(&mut ts)),
             7,
@@ -317,6 +331,7 @@ fun insurance_trigger_spawns_regular_bounty() {
             ts::ctx(&mut ts),
         );
 
+        assert!(bounty_board::active_insurance_order_count(&board) == 1, 9);
         clock.destroy_for_testing();
         ts::return_shared(insured);
         ts::return_shared(board);
@@ -331,12 +346,14 @@ fun insurance_trigger_spawns_regular_bounty() {
 
     ts::next_tx(&mut ts, GOVERNOR);
     {
+        let mut board = ts::take_shared<Board>(&ts);
         let oracle = ts::take_from_sender<OracleCap>(&ts);
         let order = ts::take_shared<InsuranceOrder<RewardToken>>(&ts);
         let killer = ts::take_shared_by_id<Character>(&ts, killer_id);
         let clock = clock::create_for_testing(ts::ctx(&mut ts));
 
         bounty_board::trigger_insurance_order(
+            &mut board,
             &oracle,
             order,
             &killer,
@@ -347,6 +364,9 @@ fun insurance_trigger_spawns_regular_bounty() {
 
         clock.destroy_for_testing();
         ts::return_shared(killer);
+        assert!(bounty_board::active_insurance_order_count(&board) == 0, 10);
+        assert!(bounty_board::active_single_bounty_count(&board) == 1, 11);
+        ts::return_shared(board);
         ts::return_to_sender(&ts, oracle);
     };
 
@@ -372,13 +392,16 @@ fun insurance_trigger_spawns_regular_bounty() {
 
     ts::next_tx(&mut ts, USER_C);
     {
+        let mut board = ts::take_shared<Board>(&ts);
         let pool = ts::take_shared<SingleBountyPool<RewardToken>>(&ts);
         let hunter = ts::take_shared_by_id<Character>(&ts, hunter_id);
 
-        assert!(bounty_board::single_claimable_amount(&pool, &hunter) == 2_000, 10);
-        bounty_board::claim_single_bounty(pool, &hunter, ts::ctx(&mut ts));
+        assert!(bounty_board::single_claimable_amount(&pool, &hunter) == 2_000, 12);
+        bounty_board::claim_single_bounty(&mut board, pool, &hunter, ts::ctx(&mut ts));
 
         ts::return_shared(hunter);
+        assert!(bounty_board::active_single_bounty_count(&board) == 0, 13);
+        ts::return_shared(board);
     };
 
     ts::next_tx(&mut ts, USER_C);
@@ -401,12 +424,12 @@ fun rejects_note_longer_than_sixty_four_bytes() {
 
     ts::next_tx(&mut ts, USER_A);
     {
-        let board = ts::take_shared<Board>(&ts);
+        let mut board = ts::take_shared<Board>(&ts);
         let insured = ts::take_shared_by_id<Character>(&ts, insured_id);
         let clock = clock::create_for_testing(ts::ctx(&mut ts));
 
         bounty_board::create_insurance_order(
-            &board,
+            &mut board,
             &insured,
             test_coin(500, ts::ctx(&mut ts)),
             7,

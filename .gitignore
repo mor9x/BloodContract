@@ -4,7 +4,9 @@ dist/
 build/
 coverage/
 .turbo/
+apps/oracle/.data/
 
+.last_pub.txt
 .env
 .env.local
 .env.*.local
@@ -15,6 +17,8 @@ contracts/**/.package_lock
 contracts/**/coverage/
 contracts/**/.sui/
 contracts/**/.deployment/*.local.json
+contracts/**/Published.toml
+contracts/**/last_pub.txt
 
 .DS_Store
 .idea/
