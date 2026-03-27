@@ -98,7 +98,7 @@ export function Navbar({
         <div className="app-stack-sm text-center">
           <div className="app-stack-xs">
             <h1 className="text-4xl font-mono font-bold uppercase tracking-wider text-white sm:text-5xl md:text-6xl">
-              {currentLang === "en" ? "Bounty Board" : "赏金榜"}
+              {currentLang === "en" ? "Blood Contract" : "血狩契约"}
             </h1>
             <p className="font-mono text-sm font-light tracking-wide text-white/70">
               {currentLang === "en" ? "Star Hunter" : "星际猎杀"}

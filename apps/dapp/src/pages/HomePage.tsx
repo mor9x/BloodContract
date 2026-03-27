@@ -460,7 +460,7 @@ export function HomePage() {
                         <div className="break-all font-mono text-xs text-white">{environment.simulationWorldPackageId}</div>
                       </section>
                       <section className="app-panel-inset app-stack-xs">
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">Bounty Board</div>
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">Blood Contract</div>
                         <div className="break-all font-mono text-xs text-white">{environment.bountyBoardPackageId}</div>
                       </section>
                     </div>
