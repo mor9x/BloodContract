@@ -18,7 +18,9 @@
     "lint": "bun --filter @bounty-board/frontier-client lint && bun --filter @bounty-board/dapp lint && bun --filter @bounty-board/oracle lint",
     "test": "bun --filter @bounty-board/frontier-client test && bun --filter @bounty-board/oracle test && bun run test:move",
     "test:move": "cd contracts/bounty_board && sui move test",
-    "sync:addresses": "bun run scripts/sync-addresses.ts"
+    "sync:addresses": "bun run scripts/sync-addresses.ts",
+    "sync:deployment": "bun run scripts/sync-addresses.ts",
+    "publish:bounty-board": "bun run scripts/publish-bounty-board.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",

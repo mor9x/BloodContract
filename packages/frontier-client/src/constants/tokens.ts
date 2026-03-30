@@ -1,36 +1,75 @@
+import tokenConfig from "./tokens.json";
+import { env } from "./runtime";
+
 export type SupportedToken = {
-  symbol: "EVE" | "FUEL" | "SUI" | "USDT" | "USDC";
+  symbol: string;
   coinType: string;
   decimals: number;
 };
 
-export const supportedTokens: SupportedToken[] = [
-  {
-    symbol: "EVE",
-    coinType: "0xbaf6e123698cc170c7d656f1606ae1e050bb3d4e5db1460af1c9af284122a8b1::EVE::EVE",
-    decimals: 9
-  },
-  {
-    symbol: "FUEL",
-    coinType: "0xffeca0a98bd75145a10e597cc5a02614cc651f3c1b8d79134bec40ff1fcefc91::fuel::FUEL",
-    decimals: 9
-  },
-  {
-    symbol: "SUI",
-    coinType: "0x2::sui::SUI",
-    decimals: 9
-  },
-  {
-    symbol: "USDT",
-    coinType: "0x700de8dea1aac1de7531e9d20fc2568b12d74369f91b7fad3abc1c4f40396e52::usdt::USDT",
-    decimals: 6
-  },
-  {
-    symbol: "USDC",
-    coinType: "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC",
-    decimals: 6
+function assertSupportedToken(value: unknown, index: number): SupportedToken {
+  if (!value || typeof value !== "object") {
+    throw new Error(`Supported token config at index ${index} must be an object`);
   }
-];
+
+  const entry = value as Record<string, unknown>;
+  const symbol = typeof entry.symbol === "string" ? entry.symbol.trim() : "";
+  const coinType = typeof entry.coinType === "string" ? entry.coinType.trim() : "";
+  const decimals = entry.decimals;
+
+  if (!symbol) {
+    throw new Error(`Supported token config at index ${index} is missing a symbol`);
+  }
+
+  if (!coinType) {
+    throw new Error(`Supported token config at index ${index} is missing a coinType`);
+  }
+
+  if (!Number.isInteger(decimals) || Number(decimals) < 0) {
+    throw new Error(`Supported token config for ${symbol} has an invalid decimals value`);
+  }
+
+  return {
+    symbol,
+    coinType,
+    decimals: Number(decimals)
+  };
+}
+
+function parseSupportedTokensConfig(raw: unknown) {
+  if (!Array.isArray(raw)) {
+    throw new Error("Supported token config must be an array");
+  }
+
+  const tokens = raw.map((entry, index) => assertSupportedToken(entry, index));
+  const seenSymbols = new Set<string>();
+  const seenCoinTypes = new Set<string>();
+
+  for (const token of tokens) {
+    if (seenSymbols.has(token.symbol)) {
+      throw new Error(`Duplicate supported token symbol: ${token.symbol}`);
+    }
+    if (seenCoinTypes.has(token.coinType)) {
+      throw new Error(`Duplicate supported token coin type: ${token.coinType}`);
+    }
+
+    seenSymbols.add(token.symbol);
+    seenCoinTypes.add(token.coinType);
+  }
+
+  return tokens;
+}
+
+function loadSupportedTokens() {
+  const override = env("VITE_SUPPORTED_TOKENS_JSON") ?? env("SUPPORTED_TOKENS_JSON");
+  if (!override) {
+    return parseSupportedTokensConfig(tokenConfig);
+  }
+
+  return parseSupportedTokensConfig(JSON.parse(override) as unknown);
+}
+
+export const supportedTokens: SupportedToken[] = loadSupportedTokens();
 
 function decimalFactor(decimals: number) {
   return 10n ** BigInt(decimals);
@@ -48,7 +87,7 @@ export function getSupportedTokenByCoinType(coinType: string) {
   return supportedTokens.find((token) => token.coinType === coinType) ?? null;
 }
 
-export function getSupportedTokenBySymbol(symbol: SupportedToken["symbol"]) {
+export function getSupportedTokenBySymbol(symbol: string) {
   return supportedTokens.find((token) => token.symbol === symbol) ?? null;
 }
 

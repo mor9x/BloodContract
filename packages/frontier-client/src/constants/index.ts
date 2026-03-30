@@ -1,2 +1,2 @@
-export { generatedIds } from "./generated";
+export { generatedDeployment } from "./generated";
 export { utopiaEnvironment } from "./network";

@@ -4,6 +4,7 @@ import type {
   ActiveInsuranceBoardRecord,
   ActiveMultiBoardRecord,
   ActiveSingleBoardRecord,
+  BoardObjectState,
   BoardRegistrySnapshot,
   BoardState
 } from "../types/board-state";
@@ -166,6 +167,25 @@ function asIdArray(value: MoveValue): string[] {
   });
 }
 
+function asNumberArray(value: MoveValue): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (typeof entry === "number" && Number.isFinite(entry)) {
+      return [entry];
+    }
+
+    if (typeof entry === "string") {
+      const parsed = Number(entry);
+      return Number.isFinite(parsed) ? [parsed] : [];
+    }
+
+    return [];
+  });
+}
+
 function asBoardFields(content: SuiMoveObject["fields"]) {
   const fields = asMoveStructFields(content);
   if (!fields) {
@@ -213,6 +233,7 @@ function parseActiveSingleRecord(object: ReadableMoveObject): ActiveSingleBoardR
   }
 
   return {
+    kind: "single",
     objectId: object.objectId,
     target,
     lossFilter: asNumber(fields.loss_filter ?? null, "loss_filter"),
@@ -221,6 +242,7 @@ function parseActiveSingleRecord(object: ReadableMoveObject): ActiveSingleBoardR
     note: asString(fields.note ?? null),
     expiresAtMs: asNumber(fields.expires_at_ms ?? null, "expires_at_ms"),
     settled: fields.settled == null ? false : asBoolean(fields.settled ?? null, "settled"),
+    usedKillmailItemIds: asNumberArray(fields.used_killmail_item_ids ?? []),
     claimableByHunter: asVecMapEntries(fields.claimable_by_hunter ?? []),
     contributions: asVecMapEntries(fields.contributions ?? [])
   };
@@ -238,6 +260,7 @@ function parseActiveMultiRecord(object: ReadableMoveObject): ActiveMultiBoardRec
   }
 
   return {
+    kind: "multi",
     objectId: object.objectId,
     target,
     lossFilter: asNumber(fields.loss_filter ?? null, "loss_filter"),
@@ -249,6 +272,7 @@ function parseActiveMultiRecord(object: ReadableMoveObject): ActiveMultiBoardRec
     recordedKills: asNumber(fields.recorded_kills ?? null, "recorded_kills"),
     perKillReward: asNumber(fields.per_kill_reward ?? null, "per_kill_reward"),
     settled: false,
+    usedKillmailItemIds: asNumberArray(fields.used_killmail_item_ids ?? []),
     claimableByHunter: asVecMapEntries(fields.claimable_by_hunter ?? []),
     contributions: asVecMapEntries(fields.contributions ?? [])
   };
@@ -266,6 +290,7 @@ function parseActiveInsuranceRecord(object: ReadableMoveObject): ActiveInsurance
   }
 
   return {
+    kind: "insurance",
     objectId: object.objectId,
     insured,
     lossFilter: asNumber(fields.loss_filter ?? null, "loss_filter"),
@@ -340,4 +365,13 @@ export async function getBoardRegistrySnapshot(client: SuiReadClient, args: GetB
       return record ? [record] : [];
     })
   };
+}
+
+export async function getBoardObjectState(client: SuiReadClient, objectId: string): Promise<BoardObjectState | null> {
+  const object = await readMoveObject(client, objectId);
+  if (!object) {
+    return null;
+  }
+
+  return parseActiveSingleRecord(object) ?? parseActiveMultiRecord(object) ?? parseActiveInsuranceRecord(object);
 }

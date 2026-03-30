@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { requestGraphQL } from "../src/graphql/client";
 import { nextCursor, toConnectionPage } from "../src/graphql/pagination";
 import { getBountyBoardEventType, queryBountyBoardEvents } from "../src/queries/bounty-board";
-import { getBoardRegistrySnapshot, getBoardState } from "../src/queries/board-state";
+import { getBoardObjectState, getBoardRegistrySnapshot, getBoardState } from "../src/queries/board-state";
 import { getKillmailCreatedEventType, queryKillmailEvents } from "../src/queries/killmail";
 
 describe("frontier-client", () => {
@@ -309,6 +309,7 @@ describe("frontier-client", () => {
 
     expect(snapshot.singles).toEqual([
       {
+        kind: "single",
         objectId: "0xsingle1",
         target: { itemId: 2002, tenant: "utopia" },
         lossFilter: 1,
@@ -317,12 +318,14 @@ describe("frontier-client", () => {
         note: null,
         expiresAtMs: 1234,
         settled: false,
+        usedKillmailItemIds: [],
         claimableByHunter: [],
         contributions: []
       }
     ]);
     expect(snapshot.multis).toEqual([
       {
+        kind: "multi",
         objectId: "0xmulti1",
         target: { itemId: 2002, tenant: "utopia" },
         lossFilter: 0,
@@ -334,12 +337,14 @@ describe("frontier-client", () => {
         recordedKills: 2,
         perKillReward: 100,
         settled: false,
+        usedKillmailItemIds: [],
         claimableByHunter: [],
         contributions: []
       }
     ]);
     expect(snapshot.insurances).toEqual([
       {
+        kind: "insurance",
         objectId: "0xinsurance1",
         insured: { itemId: 2002, tenant: "utopia" },
         lossFilter: 2,
@@ -351,6 +356,50 @@ describe("frontier-client", () => {
         spawnTargetKills: 5
       }
     ]);
+  });
+
+  test("reads a direct tracked board object by id", async () => {
+    const object = await getBoardObjectState(
+      {
+        getObject: async () => ({
+          data: {
+            content: {
+              dataType: "moveObject",
+              type: "0xbounty::bounty_board::MultiBountyPool<0x2::sui::SUI>",
+              hasPublicTransfer: true,
+              fields: {
+                target_key: { item_id: "2002", tenant: "utopia" },
+                loss_filter: "0",
+                expires_at_ms: "2234",
+                target_kills: "10",
+                recorded_kills: "2",
+                per_kill_reward: "100",
+                used_killmail_item_ids: ["77", "88"]
+              }
+            }
+          }
+        })
+      },
+      "0xmulti1"
+    );
+
+    expect(object).toEqual({
+      kind: "multi",
+      objectId: "0xmulti1",
+      target: { itemId: 2002, tenant: "utopia" },
+      lossFilter: 0,
+      coinType: "0x2::sui::SUI",
+      rewardAmount: 0,
+      note: null,
+      expiresAtMs: 2234,
+      targetKills: 10,
+      recordedKills: 2,
+      perKillReward: 100,
+      settled: false,
+      usedKillmailItemIds: [77, 88],
+      claimableByHunter: [],
+      contributions: []
+    });
   });
 
   test("retries transient GraphQL connection resets", async () => {

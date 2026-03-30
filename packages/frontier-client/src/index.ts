@@ -1,7 +1,7 @@
 import { queryKillmailEvents } from "./queries/killmail";
 import { queryBountyBoardEvents } from "./queries/bounty-board";
 import { getCharacterByItemId } from "./queries/characters";
-import { getBoardRegistrySnapshot, getBoardState } from "./queries/board-state";
+import { getBoardObjectState, getBoardRegistrySnapshot, getBoardState } from "./queries/board-state";
 import { queryWalletCharacters } from "./queries/wallet-characters";
 import { utopiaEnvironment } from "./constants";
 import type { GraphQLClientConfig } from "./graphql/client";
@@ -29,6 +29,7 @@ export type FrontierClient = {
   queryWalletCharacters: (args: QueryWalletCharactersArgs) => Promise<WalletCharacter[]>;
   getBoardState: (args: GetBoardStateArgs) => Promise<BoardState>;
   getBoardRegistrySnapshot: (args: GetBoardStateArgs) => Promise<BoardRegistrySnapshot>;
+  getBoardObjectState: (objectId: string) => Promise<import("./types/board-state").BoardObjectState | null>;
   getCharacterByItemId: (
     args: Parameters<typeof getCharacterByItemId>[1]
   ) => ReturnType<typeof getCharacterByItemId>;
@@ -48,11 +49,12 @@ export function createFrontierClient(config: FrontierClientConfig = {}): Frontie
     queryWalletCharacters: (args) => queryWalletCharacters(graphQLConfig, args),
     getBoardState: (args) => getBoardState(suiClient, args),
     getBoardRegistrySnapshot: (args) => getBoardRegistrySnapshot(suiClient, args),
+    getBoardObjectState: (objectId) => getBoardObjectState(suiClient, objectId),
     getCharacterByItemId: (args) => getCharacterByItemId(suiClient, args)
   };
 }
 
-export { utopiaEnvironment } from "./constants";
+export { generatedDeployment, utopiaEnvironment } from "./constants";
 export {
   formatAtomicAmount,
   getSupportedTokenByCoinType,
@@ -62,7 +64,7 @@ export {
 } from "./constants/tokens";
 export { createSuiReadClient } from "./rpc/client";
 export { getBountyBoardEventType, queryBountyBoardEvents } from "./queries/bounty-board";
-export { getBoardRegistrySnapshot, getBoardState } from "./queries/board-state";
+export { getBoardObjectState, getBoardRegistrySnapshot, getBoardState } from "./queries/board-state";
 export { deriveCharacterObjectId, getCharacterByItemId } from "./queries/characters";
 export { getKillmailCreatedEventType, queryKillmailEvents } from "./queries/killmail";
 export { queryWalletCharacters } from "./queries/wallet-characters";
@@ -80,7 +82,7 @@ export {
 } from "./transactions/bounty-board";
 export { buildEmitKillmailTx, KILLMAIL_LOSS_TYPE } from "./transactions/killmail";
 export type { BountyBoardEventName, BountyBoardLifecycleEvent } from "./types/bounty-board";
-export type { ActiveInsuranceBoardRecord, ActiveMultiBoardRecord, ActiveSingleBoardRecord, BoardRegistrySnapshot, BoardState } from "./types/board-state";
+export type { ActiveInsuranceBoardRecord, ActiveMultiBoardRecord, ActiveSingleBoardRecord, BoardObjectState, BoardRegistrySnapshot, BoardState } from "./types/board-state";
 export type { MirrorCharacterLookup, WalletCharacter } from "./types/character";
 export type { KillmailEvent, TenantItemIdJson } from "./types/killmail";
 export type { ConnectionEdge, ConnectionPage, PageInfo } from "./types/graphql";

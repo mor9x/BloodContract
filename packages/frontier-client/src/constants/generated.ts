@@ -1,3 +1,8 @@
-export const generatedIds = {
-  bountyBoardPackageId: "0xb76cfc4868d11b774136d0890837258aaf081be8cd22f3a78a55ce1da23bd12f"
+export const generatedDeployment = {
+  packageId: "0xdc9d0d9a2efa173471a8a6b7b0a77da9a57a0ff8499a40c1654c70f8a4b79073",
+  boardId: "0x7fb211d64f7d03577c5cfebf5ef537e93e043aabb297bf1dd9bc896ba064d406",
+  oracleCapId: "0xbc9271da9bd341f9ef93b68629696f9fe1b3b831684d2885d54d92295c98186d",
+  upgradeCapId: "0x1c168609e6a3092b1eb189ef17b1b7ace73343b04854a308eab999a4b3891c3a",
+  transactionDigest: "8ViYny9oou6pLLquLGVwqncmRRJXbS5Z3VTCq2WbwZi6",
+  checkpoint: "319722934"
 } as const;

@@ -1,7 +1,7 @@
 import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import { utopiaEnvironment } from "../constants";
 
-export type SuiReadClient = Pick<SuiJsonRpcClient, "getObject" | "getCoins">;
+export type SuiReadClient = Pick<SuiJsonRpcClient, "getObject" | "getCoins" | "getCoinMetadata" | "getBalance">;
 
 export function createSuiReadClient(rpcUrl: string = utopiaEnvironment.suiRpcUrl): SuiReadClient {
   return new SuiJsonRpcClient({
