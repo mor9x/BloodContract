@@ -1,10 +1,9 @@
-import { generatedDeployment } from "./generated";
 import { env } from "./runtime";
 
 const identityWorldPackageId = env("VITE_WORLD_PACKAGE") ?? "";
 const simulationWorldPackageId = env("VITE_SIMULATION_WORLD_PACKAGE") ?? "";
-const bountyBoardPackageId = env("VITE_BOUNTY_BOARD_PACKAGE") ?? generatedDeployment.packageId;
-const boardId = env("VITE_BOARD_ID") ?? generatedDeployment.boardId;
+const bountyBoardPackageId = env("VITE_BOUNTY_BOARD_PACKAGE") ?? "";
+const boardId = env("VITE_BOARD_ID") ?? "";
 const worldObjectRegistryId = env("VITE_WORLD_OBJECT_REGISTRY_ID") ?? "";
 
 export const utopiaEnvironment = {
