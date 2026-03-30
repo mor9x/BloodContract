@@ -390,7 +390,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="app-shell overflow-x-hidden bg-black">
+    <div className="app-shell overflow-x-hidden bg-black pt-16">
       <div
         className="pointer-events-none fixed inset-x-0 top-6 bottom-0 opacity-20 md:top-8"
         style={{
@@ -418,10 +418,10 @@ export function HomePage() {
           walletAddress={walletAddress}
         />
 
-        <main className="app-main relative mt-4 md:mt-6">
+        <main className="app-main relative mt-16 md:mt-24">
           {connectionError ? (
-            <section className="app-container pb-4">
-              <div className="border border-[#FF0000]/50 bg-[#FF0000]/10 px-4 py-3 font-mono text-xs text-[#ffb0b0]">
+            <section className="app-container pb-8">
+              <div className="border border-[#FF0000]/50 bg-[#FF0000]/10 px-6 py-4 font-mono text-sm text-[#ffb0b0]">
                 {connectionError}
               </div>
             </section>
@@ -438,8 +438,8 @@ export function HomePage() {
             sortType={sortType}
           />
 
-          <section className="app-container app-stack-md pt-2 pb-8 md:pt-4">
-            <div className="flex justify-end pt-2">
+          <section className="app-container app-stack-md pt-4 pb-12 md:pt-8">
+            <div className="flex justify-end pt-4">
               <div className="app-cluster">
                 <button
                   aria-expanded={isOperatorPanelOpen}
@@ -490,7 +490,7 @@ export function HomePage() {
               <div className="app-stack-md">
                 {isOperatorPanelOpen ? (
                   <section className="app-panel app-stack-md">
-                    <div className="text-xs uppercase tracking-[0.2em] text-white/50">Operator Console</div>
+                    <div className="text-xs uppercase tracking-widest text-white/50">Operator Console</div>
 
                     <div className="app-cluster">
                       {isConnected ? (
@@ -515,15 +515,15 @@ export function HomePage() {
 
                     <div className="app-grid-metrics">
                       <section className="app-panel-inset app-stack-xs">
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">Identity World</div>
+                        <div className="text-[10px] uppercase tracking-widest text-white/40">Identity World</div>
                         <div className="break-all font-mono text-xs text-white">{environment.identityWorldPackageId}</div>
                       </section>
                       <section className="app-panel-inset app-stack-xs">
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">Simulation World</div>
+                        <div className="text-[10px] uppercase tracking-widest text-white/40">Simulation World</div>
                         <div className="break-all font-mono text-xs text-white">{environment.simulationWorldPackageId}</div>
                       </section>
                       <section className="app-panel-inset app-stack-xs">
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">Blood Contract</div>
+                        <div className="text-[10px] uppercase tracking-widest text-white/40">Blood Contract</div>
                         <div className="break-all font-mono text-xs text-white">{environment.bountyBoardPackageId}</div>
                       </section>
                     </div>

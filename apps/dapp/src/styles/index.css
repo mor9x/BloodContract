@@ -11,15 +11,15 @@
   --font-primary: "Orbitron", "Roboto Mono", monospace;
   --font-secondary: "Rajdhani", "Roboto Mono", sans-serif;
   --font-accent: "Audiowide", "Roboto Mono", cursive;
-  --layout-max-width: 1120px;
-  --layout-max-width-wide: 1280px;
-  --layout-gutter: clamp(16px, 2.8vw, 32px);
-  --space-xs: clamp(8px, 1vw, 12px);
-  --space-sm: clamp(12px, 1.4vw, 18px);
-  --space-md: clamp(24px, 3vw, 36px);
-  --space-lg: clamp(24px, 3vw, 40px);
-  --space-xl: clamp(32px, 4vw, 56px);
-  --panel-padding: clamp(16px, 2vw, 24px);
+  --layout-max-width: 1280px;
+  --layout-max-width-wide: 1440px;
+  --layout-gutter: clamp(16px, 3vw, 40px);
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 48px;
+  --space-xl: 72px;
+  --panel-padding: 24px;
 }
 
 * {
@@ -34,8 +34,9 @@ body {
   color: var(--color-text-white);
   overflow-x: hidden;
   font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: 0.05em;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  font-size: 16px;
 }
 
 #root {
@@ -51,7 +52,7 @@ body {
 .app-main {
   display: grid;
   gap: var(--space-lg);
-  padding-block: var(--space-lg) var(--space-xl);
+  padding-block: var(--space-md) var(--space-xl);
 }
 
 .app-container {
@@ -124,7 +125,7 @@ body {
 .app-panel-inset {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
-  padding: clamp(12px, 1.4vw, 16px);
+  padding: 16px;
 }
 
 .app-actions-end {
@@ -152,7 +153,8 @@ h5,
 h6 {
   font-family: var(--font-accent);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
 }
 
 button,
@@ -160,7 +162,7 @@ input,
 select,
 textarea {
   font-family: var(--font-secondary);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 a {

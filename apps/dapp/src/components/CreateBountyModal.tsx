@@ -218,7 +218,7 @@ export function CreateBountyModal({
                     </p>
                   ) : targetLookup ? (
                     <div className="app-panel-inset app-stack-xs">
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                      <div className="text-[10px] uppercase tracking-widest text-white/40">
                         {t("createBounty.targetLookupFound")}
                       </div>
                       <div className="font-mono text-sm text-white">
@@ -226,20 +226,20 @@ export function CreateBountyModal({
                       </div>
                       <div className="app-grid-metrics">
                         <div className="app-stack-xs">
-                          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                          <div className="text-[10px] uppercase tracking-widest text-white/40">
                             {t("createBounty.targetLookupName")}
                           </div>
                           <div className="font-mono text-xs text-white">{targetLookup.metadata.name ?? "--"}</div>
                         </div>
                         <div className="app-stack-xs">
-                          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                          <div className="text-[10px] uppercase tracking-widest text-white/40">
                             {t("createBounty.targetLookupTenant")}
                           </div>
                           <div className="font-mono text-xs text-white">{targetLookup.tenant}</div>
                         </div>
                       </div>
                       <div className="app-stack-xs">
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                        <div className="text-[10px] uppercase tracking-widest text-white/40">
                           {t("createBounty.targetLookupObjectId")}
                         </div>
                         <div className="break-all font-mono text-xs text-white">{targetLookup.objectId}</div>
@@ -255,37 +255,44 @@ export function CreateBountyModal({
 
             <div className="app-grid-form">
               <div>
-                <label className="mb-2 block text-sm font-light tracking-wide text-white/70">{t("createBounty.rewardAmount")}</label>
-                <input
-                  className="w-full px-4 py-3 font-mono text-sm font-light tracking-wide"
-                  min="0"
-                  onChange={(event) => updateField("rewardAmount", event.target.value)}
-                  placeholder={t("createBounty.rewardAmountPlaceholder")}
-                  step="any"
-                  type="number"
-                  value={formData.rewardAmount}
-                />
-                {errors.rewardAmount ? <p className="mt-1 font-mono text-xs text-[#FF0000]">{errors.rewardAmount}</p> : null}
+                <label className="mb-2.5 block text-sm font-light tracking-wide text-white/70">{t("createBounty.rewardAmount")}</label>
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 px-4 py-3.5 font-mono text-sm font-light tracking-wide"
+                    min="0"
+                    onChange={(event) => updateField("rewardAmount", event.target.value)}
+                    placeholder={t("createBounty.rewardAmountPlaceholder")}
+                    step="any"
+                    type="number"
+                    value={formData.rewardAmount}
+                  />
+                </div>
+                {errors.rewardAmount ? <p className="mt-1.5 font-mono text-xs text-[#FF0000]">{errors.rewardAmount}</p> : null}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-light tracking-wide text-white/70">{t("createBounty.tokenType")}</label>
-                <select
-                  className="w-full px-4 py-3 font-mono text-sm font-light tracking-wide"
-                  onChange={(event) => updateField("token", event.target.value as SupportedToken["symbol"])}
-                  value={formData.token}
-                >
+                <label className="mb-2.5 block text-sm font-light tracking-wide text-white/70">{t("createBounty.tokenType")}</label>
+                <div className="flex gap-2">
                   {availableTokens.map((token) => (
-                    <option key={token.symbol} value={token.symbol}>
+                    <button
+                      key={token.symbol}
+                      onClick={() => updateField("token", token.symbol as any)}
+                      type="button"
+                      className={`flex-1 border px-3 py-3.5 font-mono text-sm transition-all duration-300 ${
+                        formData.token === token.symbol
+                          ? "border-[#FF0000] bg-[#FF0000] text-black shadow-[0_0_12px_rgba(255,0,0,0.3)]"
+                          : "border-white/10 bg-white/5 text-white/50 hover:border-white/20"
+                      }`}
+                    >
                       {token.symbol}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
+            <div className="pt-2">
+              <div className="mb-3 flex items-center justify-between">
                 <label className="text-sm font-light tracking-wide text-white/70">
                   {t("createBounty.killCountLabel")}: {formData.killCount}
                 </label>
@@ -302,15 +309,15 @@ export function CreateBountyModal({
                 type="range"
                 value={formData.killCount}
               />
-              <div className="mt-1 flex justify-between font-mono text-xs text-white/30">
+              <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-widest text-white/20">
                 <span>{t("createBounty.minKills")}</span>
                 <span>{t("createBounty.maxKills")}</span>
               </div>
-              {errors.killCount ? <p className="mt-1 font-mono text-xs text-[#FF0000]">{errors.killCount}</p> : null}
+              {errors.killCount ? <p className="mt-1.5 font-mono text-xs text-[#FF0000]">{errors.killCount}</p> : null}
             </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
+            <div className="pt-2">
+              <div className="mb-3 flex items-center justify-between">
                 <label className="text-sm font-light tracking-wide text-white/70">
                   {t("createBounty.timeframe")}: {formData.timeframeDays} {t("common.days")}
                 </label>
@@ -324,40 +331,40 @@ export function CreateBountyModal({
                 type="range"
                 value={formData.timeframeDays}
               />
-              <div className="mt-1 flex justify-between font-mono text-xs text-white/30">
+              <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-widest text-white/20">
                 <span>{t("createBounty.minDays")}</span>
                 <span>{t("createBounty.maxDays")}</span>
               </div>
-              <div className="mt-2 font-mono text-xs text-white/50">
+              <div className="mt-3 font-mono text-xs leading-relaxed text-white/40">
                 {fm("createBounty.timeframeHint", {
                   count: formData.killCount,
                   days: formData.timeframeDays,
                   reward: `${perKillReward} ${formData.token}`
                 })}
               </div>
-              {errors.timeframeDays ? <p className="mt-1 font-mono text-xs text-[#FF0000]">{errors.timeframeDays}</p> : null}
+              {errors.timeframeDays ? <p className="mt-1.5 font-mono text-xs text-[#FF0000]">{errors.timeframeDays}</p> : null}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-light tracking-wide text-white/70">{t("createBounty.remarks")}</label>
+              <label className="mb-2.5 block text-sm font-light tracking-wide text-white/70">{t("createBounty.remarks")}</label>
               <textarea
-                className="w-full resize-none px-4 py-3 font-mono text-sm font-light tracking-wide"
+                className="w-full resize-none px-4 py-3.5 font-mono text-sm font-light tracking-wide"
                 onChange={(event) => updateField("remarks", event.target.value)}
                 placeholder={t("createBounty.remarksPlaceholder")}
                 rows={3}
                 value={formData.remarks}
               />
-              <div className="mt-1 flex justify-between font-mono text-xs text-white/30">
+              <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-widest text-white/20">
                 <span>{t("createBounty.remarksLimitEn")}</span>
                 <span>{utf8ByteLength(formData.remarks)} / 64 bytes</span>
               </div>
-              {errors.remarks ? <p className="mt-1 font-mono text-xs text-[#FF0000]">{errors.remarks}</p> : null}
+              {errors.remarks ? <p className="mt-1.5 font-mono text-xs text-[#FF0000]">{errors.remarks}</p> : null}
             </div>
           </div>
 
-            {errors.form ? <p className="font-mono text-xs text-[#FF0000]">{errors.form}</p> : null}
+            {errors.form ? <p className="mt-2 font-mono text-xs text-[#FF0000]">{errors.form}</p> : null}
 
-            <div className="app-actions-end border-t border-white/10 pt-4">
+            <div className="app-actions-end border-t border-white/10 pt-6">
               <button className="btn-secondary px-4 py-2 text-sm" onClick={onClose} type="button">
                 {t("createBounty.cancel")}
               </button>

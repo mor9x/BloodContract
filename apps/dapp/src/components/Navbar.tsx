@@ -40,14 +40,14 @@ export function Navbar({
   const walletPreview = formatWalletAddress(walletAddress);
 
   return (
-    <nav className="sticky top-6 z-40 border-b border-white/20 bg-[#000000] backdrop-blur-sm md:top-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-8 md:pt-10">
-        <div className="flex justify-end pr-16">
+    <nav className="relative z-40 border-b border-white/10 bg-[#000000] shadow-2xl">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-10 md:pt-12">
+        <div className="flex justify-end pr-10 md:pr-16">
           <button
-            className={`pointer-events-auto mt-3 flex h-[46px] w-[216px] items-center justify-center border px-4 py-2 font-mono text-sm tracking-[0.08em] transition-colors duration-300 md:mt-5 ${
+            className={`pointer-events-auto flex h-[64px] w-[280px] items-center justify-center border px-8 py-3 font-mono text-base font-bold tracking-widest transition-all duration-300 ${
               isWalletConnected
-                ? "border-[#FF0000]/45 bg-[#FF0000]/10 text-white hover:border-[#FF0000] hover:bg-[#FF0000]/14"
-                : "border-white/20 bg-[#2A2A2A] text-white/70 hover:border-[#FF0000]/50"
+                ? "border-[#FF0000]/40 bg-[#FF0000]/10 text-white hover:border-[#FF0000] hover:bg-[#FF0000]/20"
+                : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
             }`}
             disabled={isWalletConnecting}
             onClick={isWalletConnected ? onDisconnectWallet : onConnectWallet}
@@ -64,14 +64,14 @@ export function Navbar({
         </div>
       </div>
 
-      <div className="app-container app-stack-lg px-0 pt-8 pb-10 md:pt-10 md:pb-14">
+      <div className="app-container app-stack-lg px-0 pt-16 pb-12 md:pt-24 md:pb-16">
         <div className="flex justify-center">
           <div className="group flex justify-center">
-            <div className="w-full max-w-[208px] md:max-w-[220px]">
+            <div className="w-full max-w-[240px] md:max-w-[280px]">
               <img
                 src="/eve-frontier-logo.png"
                 alt="EVE Frontier Logo"
-                className="mt-4 block h-auto w-full object-contain md:mt-6"
+                className="mt-8 block h-auto w-full object-contain md:mt-12"
                 onError={(event) => {
                   const image = event.currentTarget;
                   image.style.display = "none";
@@ -97,10 +97,10 @@ export function Navbar({
 
         <div className="app-stack-sm text-center">
           <div className="app-stack-xs">
-            <h1 className="text-4xl font-mono font-bold uppercase tracking-wider text-white sm:text-5xl md:text-6xl">
+            <h1 className="text-5xl font-mono font-bold uppercase tracking-wider text-white sm:text-6xl md:text-7xl">
               {currentLang === "en" ? "Blood Contract" : "血狩契约"}
             </h1>
-            <p className="font-mono text-sm font-light tracking-wide text-white/70">
+            <p className="font-mono text-base font-light tracking-widest text-white/70">
               {currentLang === "en" ? "Star Hunter" : "星际猎杀"}
             </p>
           </div>
@@ -111,17 +111,17 @@ export function Navbar({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 pt-5 pb-4 sm:flex-row sm:items-center sm:justify-between md:pt-6 md:pb-6">
+        <div className="flex flex-col gap-6 pt-8 pb-6 sm:flex-row sm:items-center sm:justify-between md:pt-10 md:pb-8">
           <button
-            className="btn-primary flex items-center justify-center gap-3 px-6 py-3 text-base font-bold sm:justify-start"
+            className="btn-primary flex items-center justify-center gap-4 px-10 py-4 text-lg font-bold sm:justify-start"
             disabled={isCreateBountyPending}
             onClick={onCreateBounty}
             type="button"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M12 4v16m8-8H4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4v16m8-8H4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} />
             </svg>
-            <span className="font-light tracking-wider">{t("createBounty.button")}</span>
+            <span className="font-light tracking-widest">{t("createBounty.button")}</span>
           </button>
 
           <div className="app-cluster sm:justify-end">
