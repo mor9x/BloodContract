@@ -22,6 +22,7 @@ type SingleRow = {
   target_tenant: string;
   loss_filter: number;
   coin_type: string;
+  created_at_ms: number;
   expires_at_ms: number;
 };
 
@@ -37,9 +38,14 @@ type InsuranceRow = {
   insured_tenant: string;
   loss_filter: number;
   coin_type: string;
+  created_at_ms: number;
   expires_at_ms: number;
   spawn_mode: number;
   spawn_target_kills: number;
+};
+
+type TableColumnRow = {
+  name: string;
 };
 
 function nowIso() {
@@ -52,6 +58,15 @@ function coerceCount(value: string | null) {
   }
 
   const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseEventTimestampMs(value: string | null) {
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -81,6 +96,7 @@ export class OracleStore {
         target_tenant text not null,
         loss_filter integer not null,
         coin_type text not null,
+        created_at_ms integer not null default 0,
         expires_at_ms integer not null,
         updated_at text not null
       );
@@ -91,6 +107,7 @@ export class OracleStore {
         target_tenant text not null,
         loss_filter integer not null,
         coin_type text not null,
+        created_at_ms integer not null default 0,
         expires_at_ms integer not null,
         target_kills integer not null,
         recorded_kills integer not null,
@@ -104,6 +121,7 @@ export class OracleStore {
         insured_tenant text not null,
         loss_filter integer not null,
         coin_type text not null,
+        created_at_ms integer not null default 0,
         expires_at_ms integer not null,
         spawn_mode integer not null,
         spawn_target_kills integer not null,
@@ -125,6 +143,19 @@ export class OracleStore {
         updated_at text not null
       );
     `);
+
+    this.ensureColumn("active_single_bounties", "created_at_ms", "integer not null default 0");
+    this.ensureColumn("active_multi_bounties", "created_at_ms", "integer not null default 0");
+    this.ensureColumn("active_insurance_orders", "created_at_ms", "integer not null default 0");
+  }
+
+  private ensureColumn(table: string, column: string, definition: string) {
+    const columns = this.db.query<TableColumnRow, []>(`pragma table_info(${table})`).all();
+    if (columns.some((entry) => entry.name === column)) {
+      return;
+    }
+
+    this.db.exec(`alter table ${table} add column ${column} ${definition}`);
   }
 
   getCursor(source: string) {
@@ -186,7 +217,7 @@ export class OracleStore {
           ) {
             this.db
               .query(
-                "insert into active_single_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, expires_at_ms, updated_at) values (?, ?, ?, ?, ?, ?, ?) on conflict(object_id) do update set target_item_id = excluded.target_item_id, target_tenant = excluded.target_tenant, loss_filter = excluded.loss_filter, coin_type = excluded.coin_type, expires_at_ms = excluded.expires_at_ms, updated_at = excluded.updated_at"
+                "insert into active_single_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?) on conflict(object_id) do update set target_item_id = excluded.target_item_id, target_tenant = excluded.target_tenant, loss_filter = excluded.loss_filter, coin_type = excluded.coin_type, created_at_ms = excluded.created_at_ms, expires_at_ms = excluded.expires_at_ms, updated_at = excluded.updated_at"
               )
               .run(
                 event.bountyId,
@@ -194,6 +225,7 @@ export class OracleStore {
                 event.targetKey.tenant,
                 event.lossFilter,
                 event.coinType,
+                parseEventTimestampMs(event.timestamp),
                 event.expiresAtMs,
                 updatedAt
               );
@@ -225,7 +257,7 @@ export class OracleStore {
           ) {
             this.db
               .query(
-                "insert into active_multi_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, expires_at_ms, target_kills, recorded_kills, per_kill_reward, updated_at) values (?, ?, ?, ?, ?, ?, ?, 0, ?, ?) on conflict(object_id) do update set target_item_id = excluded.target_item_id, target_tenant = excluded.target_tenant, loss_filter = excluded.loss_filter, coin_type = excluded.coin_type, expires_at_ms = excluded.expires_at_ms, target_kills = excluded.target_kills, per_kill_reward = excluded.per_kill_reward, updated_at = excluded.updated_at"
+                "insert into active_multi_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, target_kills, recorded_kills, per_kill_reward, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?) on conflict(object_id) do update set target_item_id = excluded.target_item_id, target_tenant = excluded.target_tenant, loss_filter = excluded.loss_filter, coin_type = excluded.coin_type, created_at_ms = excluded.created_at_ms, expires_at_ms = excluded.expires_at_ms, target_kills = excluded.target_kills, per_kill_reward = excluded.per_kill_reward, updated_at = excluded.updated_at"
               )
               .run(
                 event.bountyId,
@@ -233,6 +265,7 @@ export class OracleStore {
                 event.targetKey.tenant,
                 event.lossFilter,
                 event.coinType,
+                parseEventTimestampMs(event.timestamp),
                 event.expiresAtMs,
                 event.targetKills,
                 event.perKillReward,
@@ -279,7 +312,7 @@ export class OracleStore {
           ) {
             this.db
               .query(
-                "insert into active_insurance_orders (object_id, insured_item_id, insured_tenant, loss_filter, coin_type, expires_at_ms, spawn_mode, spawn_target_kills, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict(object_id) do update set insured_item_id = excluded.insured_item_id, insured_tenant = excluded.insured_tenant, loss_filter = excluded.loss_filter, coin_type = excluded.coin_type, expires_at_ms = excluded.expires_at_ms, spawn_mode = excluded.spawn_mode, spawn_target_kills = excluded.spawn_target_kills, updated_at = excluded.updated_at"
+                "insert into active_insurance_orders (object_id, insured_item_id, insured_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, spawn_mode, spawn_target_kills, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict(object_id) do update set insured_item_id = excluded.insured_item_id, insured_tenant = excluded.insured_tenant, loss_filter = excluded.loss_filter, coin_type = excluded.coin_type, created_at_ms = excluded.created_at_ms, expires_at_ms = excluded.expires_at_ms, spawn_mode = excluded.spawn_mode, spawn_target_kills = excluded.spawn_target_kills, updated_at = excluded.updated_at"
               )
               .run(
                 event.orderId,
@@ -287,6 +320,7 @@ export class OracleStore {
                 event.insuredKey.tenant,
                 event.lossFilter,
                 event.coinType,
+                parseEventTimestampMs(event.timestamp),
                 event.expiresAtMs,
                 event.spawnMode,
                 event.spawnTargetKills,
@@ -361,7 +395,7 @@ export class OracleStore {
 
   snapshot(): ActiveIndexSnapshot {
     const singles = this.db
-      .query<SingleRow, []>("select object_id, target_item_id, target_tenant, loss_filter, coin_type, expires_at_ms from active_single_bounties")
+      .query<SingleRow, []>("select object_id, target_item_id, target_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms from active_single_bounties")
       .all()
       .map<ActiveSingleBountyRecord>((row: SingleRow) => ({
         objectId: row.object_id,
@@ -371,12 +405,13 @@ export class OracleStore {
         },
         lossFilter: row.loss_filter,
         coinType: row.coin_type,
+        createdAtMs: row.created_at_ms,
         expiresAtMs: row.expires_at_ms
       }));
 
     const multis = this.db
       .query<MultiRow, []>(
-        "select object_id, target_item_id, target_tenant, loss_filter, coin_type, expires_at_ms, target_kills, recorded_kills, per_kill_reward from active_multi_bounties"
+        "select object_id, target_item_id, target_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, target_kills, recorded_kills, per_kill_reward from active_multi_bounties"
       )
       .all()
       .map<ActiveMultiBountyRecord>((row: MultiRow) => ({
@@ -387,6 +422,7 @@ export class OracleStore {
         },
         lossFilter: row.loss_filter,
         coinType: row.coin_type,
+        createdAtMs: row.created_at_ms,
         expiresAtMs: row.expires_at_ms,
         targetKills: row.target_kills,
         recordedKills: row.recorded_kills,
@@ -395,7 +431,7 @@ export class OracleStore {
 
     const insurances = this.db
       .query<InsuranceRow, []>(
-        "select object_id, insured_item_id, insured_tenant, loss_filter, coin_type, expires_at_ms, spawn_mode, spawn_target_kills from active_insurance_orders"
+        "select object_id, insured_item_id, insured_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, spawn_mode, spawn_target_kills from active_insurance_orders"
       )
       .all()
       .map<ActiveInsuranceRecord>((row: InsuranceRow) => ({
@@ -406,6 +442,7 @@ export class OracleStore {
         },
         lossFilter: row.loss_filter,
         coinType: row.coin_type,
+        createdAtMs: row.created_at_ms,
         expiresAtMs: row.expires_at_ms,
         spawnMode: row.spawn_mode,
         spawnTargetKills: row.spawn_target_kills
@@ -417,6 +454,17 @@ export class OracleStore {
   replaceActiveIndexes(snapshot: ActiveIndexSnapshot) {
     withTransaction(this.db, () => {
       const updatedAt = nowIso();
+      const existingCreatedAtMs = new Map<string, number>();
+
+      for (const row of this.db.query<{ object_id: string; created_at_ms: number }, []>("select object_id, created_at_ms from active_single_bounties").all()) {
+        existingCreatedAtMs.set(row.object_id, row.created_at_ms);
+      }
+      for (const row of this.db.query<{ object_id: string; created_at_ms: number }, []>("select object_id, created_at_ms from active_multi_bounties").all()) {
+        existingCreatedAtMs.set(row.object_id, row.created_at_ms);
+      }
+      for (const row of this.db.query<{ object_id: string; created_at_ms: number }, []>("select object_id, created_at_ms from active_insurance_orders").all()) {
+        existingCreatedAtMs.set(row.object_id, row.created_at_ms);
+      }
 
       this.db.query("delete from active_single_bounties").run();
       this.db.query("delete from active_multi_bounties").run();
@@ -425,7 +473,7 @@ export class OracleStore {
       for (const record of snapshot.singles) {
         this.db
           .query(
-            "insert into active_single_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, expires_at_ms, updated_at) values (?, ?, ?, ?, ?, ?, ?)"
+            "insert into active_single_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)"
           )
           .run(
             record.objectId,
@@ -433,6 +481,7 @@ export class OracleStore {
             record.target.tenant,
             record.lossFilter,
             record.coinType,
+            existingCreatedAtMs.get(record.objectId) ?? record.createdAtMs,
             record.expiresAtMs,
             updatedAt
           );
@@ -441,7 +490,7 @@ export class OracleStore {
       for (const record of snapshot.multis) {
         this.db
           .query(
-            "insert into active_multi_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, expires_at_ms, target_kills, recorded_kills, per_kill_reward, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "insert into active_multi_bounties (object_id, target_item_id, target_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, target_kills, recorded_kills, per_kill_reward, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
           )
           .run(
             record.objectId,
@@ -449,6 +498,7 @@ export class OracleStore {
             record.target.tenant,
             record.lossFilter,
             record.coinType,
+            existingCreatedAtMs.get(record.objectId) ?? record.createdAtMs,
             record.expiresAtMs,
             record.targetKills,
             record.recordedKills,
@@ -460,7 +510,7 @@ export class OracleStore {
       for (const record of snapshot.insurances) {
         this.db
           .query(
-            "insert into active_insurance_orders (object_id, insured_item_id, insured_tenant, loss_filter, coin_type, expires_at_ms, spawn_mode, spawn_target_kills, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "insert into active_insurance_orders (object_id, insured_item_id, insured_tenant, loss_filter, coin_type, created_at_ms, expires_at_ms, spawn_mode, spawn_target_kills, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
           )
           .run(
             record.objectId,
@@ -468,6 +518,7 @@ export class OracleStore {
             record.insured.tenant,
             record.lossFilter,
             record.coinType,
+            existingCreatedAtMs.get(record.objectId) ?? record.createdAtMs,
             record.expiresAtMs,
             record.spawnMode,
             record.spawnTargetKills,

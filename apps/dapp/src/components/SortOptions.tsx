@@ -16,7 +16,7 @@ export function SortOptions({ currentSort, onSortChange, currentLang }: SortOpti
 
   return (
     <div className="flex flex-col gap-6 border border-white/20 bg-[#1A1A1A] p-6 sm:flex-row sm:items-center">
-      <div className="flex items-center gap-6 border-b border-white/10 px-2 pb-6 sm:border-r sm:border-b-0 sm:pb-0 sm:pr-8">
+      <div className="flex items-center gap-6 border-b border-white/10 px-2 pb-6 sm:border-b-0 sm:pb-0 sm:pr-8">
         <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"

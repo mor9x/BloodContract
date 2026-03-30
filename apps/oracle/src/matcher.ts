@@ -38,6 +38,27 @@ function deriveCharacterObjectId(config: OracleConfig, itemId: number, tenant: s
   );
 }
 
+function parseIsoTimestampMs(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeKillTimestampMs(value: number | null) {
+  if (value == null || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return value >= 1_000_000_000_000 ? value : value * 1000;
+}
+
+function resolveKillmailOccurredAtMs(event: KillmailEvent) {
+  return normalizeKillTimestampMs(event.killTimestamp) ?? parseIsoTimestampMs(event.timestamp);
+}
+
 export function matchKillmailEvent(
   config: OracleConfig,
   snapshot: ActiveIndexSnapshot,
@@ -55,10 +76,16 @@ export function matchKillmailEvent(
   }
 
   const hunterCharacterObjectId = deriveCharacterObjectId(config, event.killerId.itemId, event.killerId.tenant);
+  const killmailOccurredAtMs = resolveKillmailOccurredAtMs(event);
+
+  if (killmailOccurredAtMs == null) {
+    return [];
+  }
 
   const singles = snapshot.singles
     .filter(
       (record) =>
+        record.createdAtMs <= killmailOccurredAtMs &&
         record.expiresAtMs > nowMs &&
         record.target.itemId === event.victimId?.itemId &&
         record.target.tenant === event.victimId?.tenant &&
@@ -75,6 +102,7 @@ export function matchKillmailEvent(
   const multis = snapshot.multis
     .filter(
       (record) =>
+        record.createdAtMs <= killmailOccurredAtMs &&
         record.expiresAtMs > nowMs &&
         record.target.itemId === event.victimId?.itemId &&
         record.target.tenant === event.victimId?.tenant &&
@@ -93,6 +121,7 @@ export function matchKillmailEvent(
   const insurances = snapshot.insurances
     .filter(
       (record) =>
+        record.createdAtMs <= killmailOccurredAtMs &&
         record.expiresAtMs > nowMs &&
         record.insured.itemId === event.victimId?.itemId &&
         record.insured.tenant === event.victimId?.tenant &&

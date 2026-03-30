@@ -54,9 +54,9 @@ async function main() {
     boardId: config.boardId
   });
   store.replaceActiveIndexes({
-    singles: boardSnapshot.singles,
-    multis: boardSnapshot.multis,
-    insurances: boardSnapshot.insurances
+    singles: boardSnapshot.singles.map((record) => ({ ...record, createdAtMs: 0 })),
+    multis: boardSnapshot.multis.map((record) => ({ ...record, createdAtMs: 0 })),
+    insurances: boardSnapshot.insurances.map((record) => ({ ...record, createdAtMs: 0 }))
   });
   logInfo("board calibration completed", {
     boardId: boardSnapshot.board.objectId,

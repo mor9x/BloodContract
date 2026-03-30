@@ -30,6 +30,7 @@ describe("matchKillmailEvent regressions", () => {
           target: { itemId: 0, tenant: "UTOPIA" },
           lossFilter: LOSS_ANY,
           coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-20T00:00:00Z"),
           expiresAtMs: 10_000
         }
       ],
@@ -47,7 +48,7 @@ describe("matchKillmailEvent regressions", () => {
       reportedByCharacterId: { itemId: 77, tenant: "UTOPIA" },
       solarSystemId: { itemId: 88, tenant: "UTOPIA" },
       lossType: "SHIP",
-      killTimestamp: 1_710_000_000,
+      killTimestamp: Math.floor(Date.parse("2026-03-21T00:00:00Z") / 1000),
       contentsJson: {}
     };
 
@@ -69,6 +70,7 @@ describe("matchKillmailEvent regressions", () => {
           target: { itemId: 22, tenant: "UTOPIA" },
           lossFilter: LOSS_ANY,
           coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-20T00:00:00Z"),
           expiresAtMs: 999
         },
         {
@@ -76,6 +78,7 @@ describe("matchKillmailEvent regressions", () => {
           target: { itemId: 22, tenant: "UTOPIA" },
           lossFilter: LOSS_ANY,
           coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-20T00:00:00Z"),
           expiresAtMs: 5_000
         }
       ],
@@ -93,12 +96,47 @@ describe("matchKillmailEvent regressions", () => {
       reportedByCharacterId: { itemId: 77, tenant: "UTOPIA" },
       solarSystemId: { itemId: 88, tenant: "UTOPIA" },
       lossType: "SHIP",
-      killTimestamp: 1_710_000_000,
+      killTimestamp: Math.floor(Date.parse("2026-03-21T00:00:00Z") / 1000),
       contentsJson: {}
     };
 
     const actions = matchKillmailEvent(config, snapshot, event, 1_000);
 
     expect(actions.map((action) => action.objectId)).toEqual(["0xsingle-live"]);
+  });
+
+  test("ignores killmails whose kill timestamp predates bounty creation", () => {
+    const snapshot: ActiveIndexSnapshot = {
+      singles: [
+        {
+          objectId: "0xsingle-new",
+          target: { itemId: 22, tenant: "UTOPIA" },
+          lossFilter: LOSS_ANY,
+          coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-21T12:00:00Z"),
+          expiresAtMs: 5_000_000_000_000
+        }
+      ],
+      multis: [],
+      insurances: []
+    };
+
+    const event: KillmailEvent = {
+      eventType: "0xworld::killmail::KillmailCreatedEvent",
+      timestamp: "2026-03-21T12:05:00Z",
+      digest: "0xdigest",
+      killmailItemId: 99,
+      killerId: { itemId: 44, tenant: "UTOPIA" },
+      victimId: { itemId: 22, tenant: "UTOPIA" },
+      reportedByCharacterId: { itemId: 77, tenant: "UTOPIA" },
+      solarSystemId: { itemId: 88, tenant: "UTOPIA" },
+      lossType: "SHIP",
+      killTimestamp: Math.floor(Date.parse("2026-03-20T12:00:00Z") / 1000),
+      contentsJson: {}
+    };
+
+    const actions = matchKillmailEvent(config, snapshot, event, 1_000);
+
+    expect(actions).toEqual([]);
   });
 });

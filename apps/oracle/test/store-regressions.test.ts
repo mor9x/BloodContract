@@ -64,6 +64,7 @@ describe("OracleStore regressions", () => {
         target: { itemId: 0, tenant: "UTOPIA" },
         lossFilter: 0,
         coinType: "0x2::sui::SUI",
+        createdAtMs: Date.parse("2026-03-21T00:00:00Z"),
         expiresAtMs: 123
       }
     ]);

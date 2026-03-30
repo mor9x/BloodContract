@@ -31,7 +31,7 @@ const baseEvent: KillmailEvent = {
   reportedByCharacterId: { itemId: 77, tenant: "UTOPIA" },
   solarSystemId: { itemId: 88, tenant: "UTOPIA" },
   lossType: "SHIP",
-  killTimestamp: 1_710_000_000,
+  killTimestamp: Math.floor(Date.parse("2026-03-21T00:00:00Z") / 1000),
   contentsJson: {}
 };
 
@@ -44,6 +44,7 @@ describe("matchKillmailEvent", () => {
           target: { itemId: 22, tenant: "UTOPIA" },
           lossFilter: LOSS_ANY,
           coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-20T00:00:00Z"),
           expiresAtMs: 1
         },
         {
@@ -51,6 +52,7 @@ describe("matchKillmailEvent", () => {
           target: { itemId: 22, tenant: "UTOPIA" },
           lossFilter: LOSS_STRUCTURE,
           coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-20T00:00:00Z"),
           expiresAtMs: 1
         }
       ],
@@ -60,6 +62,7 @@ describe("matchKillmailEvent", () => {
           target: { itemId: 22, tenant: "UTOPIA" },
           lossFilter: LOSS_SHIP,
           coinType: "0x2::sui::SUI",
+          createdAtMs: Date.parse("2026-03-20T00:00:00Z"),
           expiresAtMs: 1,
           targetKills: 10,
           recordedKills: 3,

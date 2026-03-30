@@ -157,6 +157,7 @@ describe("oracle sync", () => {
           target: { itemId: 22, tenant: "UTOPIA" },
           lossFilter: 0,
           coinType: "0x2::sui::SUI",
+          createdAtMs: 0,
           expiresAtMs: 10_000
         },
         {
@@ -164,6 +165,7 @@ describe("oracle sync", () => {
           target: { itemId: 23, tenant: "UTOPIA" },
           lossFilter: 0,
           coinType: "0x2::sui::SUI",
+          createdAtMs: 0,
           expiresAtMs: 10_000
         }
       ],

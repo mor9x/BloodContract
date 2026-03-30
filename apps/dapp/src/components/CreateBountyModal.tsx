@@ -63,6 +63,17 @@ function formatDisplayAmount(value: number) {
   return formatted.replace(/\.?0+$/, "");
 }
 
+function sanitizeDecimalInput(value: string) {
+  const normalized = value.replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const [integerPart = "", ...decimalParts] = normalized.split(".");
+
+  if (decimalParts.length === 0) {
+    return integerPart;
+  }
+
+  return `${integerPart}.${decimalParts.join("")}`;
+}
+
 export function CreateBountyModal({
   isOpen,
   currentLang,
@@ -259,11 +270,10 @@ export function CreateBountyModal({
                 <div className="flex gap-2">
                   <input
                     className="flex-1 px-4 py-3.5 font-mono text-sm font-light tracking-wide"
-                    min="0"
-                    onChange={(event) => updateField("rewardAmount", event.target.value)}
+                    inputMode="decimal"
+                    onChange={(event) => updateField("rewardAmount", sanitizeDecimalInput(event.target.value))}
                     placeholder={t("createBounty.rewardAmountPlaceholder")}
-                    step="any"
-                    type="number"
+                    type="text"
                     value={formData.rewardAmount}
                   />
                 </div>

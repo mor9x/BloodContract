@@ -25,6 +25,7 @@ describe("OracleStore", () => {
 
     expect(store.getCursor("bounty_board.SingleBountyCreatedEvent")).toBe("cursor-1");
     expect(store.snapshot().singles[0]?.objectId).toBe("0xpool");
+    expect(store.snapshot().singles[0]?.createdAtMs).toBe(Date.parse("2026-03-21T00:00:00Z"));
     expect(store.health(["bounty_board.SingleBountyCreatedEvent"]).totals.lifecycleEventsProcessed).toBe(1);
     expect(store.health(["bounty_board.SingleBountyCreatedEvent"]).lastLifecycleSyncAt).not.toBeNull();
     expect(store.health(["bounty_board.SingleBountyCreatedEvent"]).ready).toBe(false);
@@ -88,6 +89,7 @@ describe("OracleStore", () => {
           target: { itemId: 2002, tenant: "utopia" },
           lossFilter: 1,
           coinType: "0x2::sui::SUI",
+          createdAtMs: 0,
           expiresAtMs: 999
         }
       ],
@@ -101,6 +103,7 @@ describe("OracleStore", () => {
         target: { itemId: 2002, tenant: "utopia" },
         lossFilter: 1,
         coinType: "0x2::sui::SUI",
+        createdAtMs: 0,
         expiresAtMs: 999
       }
     ]);

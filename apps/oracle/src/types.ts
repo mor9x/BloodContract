@@ -22,6 +22,7 @@ export type ActiveSingleBountyRecord = {
   target: TenantItemIdJson;
   lossFilter: number;
   coinType: string;
+  createdAtMs: number;
   expiresAtMs: number;
 };
 
@@ -30,6 +31,7 @@ export type ActiveMultiBountyRecord = {
   target: TenantItemIdJson;
   lossFilter: number;
   coinType: string;
+  createdAtMs: number;
   expiresAtMs: number;
   targetKills: number;
   recordedKills: number;
@@ -41,6 +43,7 @@ export type ActiveInsuranceRecord = {
   insured: TenantItemIdJson;
   lossFilter: number;
   coinType: string;
+  createdAtMs: number;
   expiresAtMs: number;
   spawnMode: number;
   spawnTargetKills: number;
