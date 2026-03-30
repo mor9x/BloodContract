@@ -10,6 +10,7 @@ import {
 export type BountyCardModel = {
   id: string;
   kind: "single" | "multi" | "insurance";
+  lossType: "any" | "ship" | "building";
   targetLabel: string;
   targetItemId: number | null;
   targetTenant: string | null;
@@ -46,6 +47,18 @@ function tokenSymbolForCoinType(coinType: string) {
   return getSupportedTokenByCoinType(coinType)?.symbol ?? coinType;
 }
 
+function lossTypeForFilter(lossFilter: number) {
+  if (lossFilter === 1) {
+    return "ship" as const;
+  }
+
+  if (lossFilter === 2) {
+    return "building" as const;
+  }
+
+  return "any" as const;
+}
+
 function matchesSelectedCharacter(
   key: { itemId: number | null; tenant: string | null },
   selectedCharacter: MirrorCharacterLookup | null
@@ -69,6 +82,7 @@ function singleToCard(
   return {
     id: record.objectId,
     kind: "single",
+    lossType: lossTypeForFilter(record.lossFilter),
     targetLabel: String(record.target.itemId ?? "UNKNOWN"),
     targetItemId: record.target.itemId,
     targetTenant: record.target.tenant,
@@ -97,6 +111,7 @@ function multiToCard(
   return {
     id: record.objectId,
     kind: "multi",
+    lossType: lossTypeForFilter(record.lossFilter),
     targetLabel: String(record.target.itemId ?? "UNKNOWN"),
     targetItemId: record.target.itemId,
     targetTenant: record.target.tenant,
@@ -128,6 +143,7 @@ function insuranceToCard(
   return {
     id: record.objectId,
     kind: "insurance",
+    lossType: lossTypeForFilter(record.lossFilter),
     targetLabel: String(record.insured.itemId ?? "UNKNOWN"),
     targetItemId: record.insured.itemId,
     targetTenant: record.insured.tenant,

@@ -1,5 +1,6 @@
 import { formatAtomicAmount, getSupportedTokenBySymbol } from "@bounty-board/frontier-client";
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import type { BountyCardModel } from "../lib/bounty-view";
 import { formatDate, formatRemainingTime } from "../lib/date-utils";
 import { frontierClient } from "../lib/frontier";
@@ -15,13 +16,26 @@ type TaskCardProps = {
   isPending?: boolean;
 };
 
+export type DetailFieldProps = {
+  label: string;
+  value: ReactNode;
+  valueClassName?: string;
+};
+
+export type StatTileProps = {
+  label: string;
+  value: ReactNode;
+  footer?: string;
+  valueClassName?: string;
+};
+
 export function TaskCard({ bounty, currentLang, onClaim, onRefund: _onRefund, isPending }: TaskCardProps) {
   const t = (key: string) => getTranslation(currentLang, key);
   const fm = (key: string, params: Record<string, string | number>) => formatMessage(currentLang, key, params);
   
   const progressPercent = bounty.killCount > 0 ? Math.min(100, (bounty.completedKills / bounty.killCount) * 100) : 0;
   const isClaimable = bounty.claimableAmount > 0;
-  const isRefundable = bounty.refundableAmount > 0;
+  const isRefundable = bounty.status === "refundable" && bounty.refundableAmount > 0;
   const isInsurance = bounty.kind === "insurance";
   const environment = frontierClient.environment;
   
@@ -49,6 +63,12 @@ export function TaskCard({ bounty, currentLang, onClaim, onRefund: _onRefund, is
   const targetObjectId = isInsurance ? "--" : targetCharacter?.objectId ?? (targetCharacterQuery.isLoading ? t("taskCard.loadingCharacter") : "--");
   const targetQueryStatus = isInsurance ? null : targetCharacterQuery.isError ? t("taskCard.lookupFailed") : null;
   const titleLabel = isInsurance ? t("taskCard.insured") : t("taskCard.target");
+  const lossTypeLabel =
+    bounty.lossType === "building"
+      ? t("taskCard.lossTypeBuilding")
+      : bounty.lossType === "ship"
+        ? t("taskCard.lossTypeShip")
+        : t("taskCard.lossTypeAny");
 
   return (
     <article className="w-full">
@@ -61,7 +81,7 @@ export function TaskCard({ bounty, currentLang, onClaim, onRefund: _onRefund, is
         <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/90 to-[#120804]/90" />
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-[#ff5a1f]/60 to-transparent" />
 
-        <div className={`relative z-10 p-10 md:p-14 lg:p-16 ${isClaimable ? "pointer-events-none blur-[4px] opacity-30" : ""}`}>
+        <div className={`relative z-10 grid gap-6 p-10 md:p-14 lg:p-16 ${isClaimable ? "pointer-events-none blur-[4px] opacity-30" : ""}`}>
           <div className="grid items-center gap-12 lg:grid-cols-[1fr_440px] xl:gap-20">
             
             {/* Left Section: Target Info */}
@@ -88,49 +108,51 @@ export function TaskCard({ bounty, currentLang, onClaim, onRefund: _onRefund, is
                   )}
                 </div>
 
-                <div className="grid gap-10 border-t border-white/5 pt-10 sm:grid-cols-2">
+                <div className="grid gap-10 border-t border-white/5 pt-10 sm:grid-cols-2 lg:grid-cols-3">
                   <DetailField label={t("taskCard.uid")} value={targetUid} valueClassName="text-3xl font-black text-white" />
                   <DetailField label={t("taskCard.objectId")} value={targetObjectId} valueClassName="break-all font-mono text-[12px] leading-relaxed text-white/30" />
+                  <DetailField label={t("taskCard.lossType")} value={lossTypeLabel} valueClassName="text-2xl font-black text-[#ffb36e]" />
                 </div>
-              </div>
-
-              {/* Progress Bar Area */}
-              <div className="space-y-6 border border-white/10 bg-white/[0.03] p-8">
-                <div className="flex items-center justify-between">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/20">
-                    {isInsurance ? t("taskCard.triggerCondition") : t("taskCard.progress")}
-                  </div>
-                  <div className="font-mono text-sm font-bold tracking-widest text-white/90">
-                    {isInsurance ? fm("taskCard.futureKillerHint", { insured: bounty.targetLabel, uid: targetUid }) : fm("taskCard.killProgress", { completed: bounty.completedKills, total: bounty.killCount })}
-                  </div>
-                </div>
-                {!isInsurance && (
-                  <div className="h-2 overflow-hidden bg-white/5 ring-1 ring-white/10">
-                    <div 
-                      className="h-full bg-[#ff5a1f] transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(255,90,31,0.6)]" 
-                      style={{ width: `${progressPercent}%` }} 
-                    />
-                  </div>
-                )}
               </div>
             </section>
 
             {/* Right Section: Stats & Notes */}
-            <aside className="space-y-10">
+            <aside>
               <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <StatTile label={t("taskCard.totalReward")} value={rewardLabel} footer={bounty.tokenSymbol} valueClassName="text-3xl font-black text-[#ff5a1f]" />
                 <StatTile label={t("taskCard.perKillReward")} value={perKillLabel} footer={bounty.tokenSymbol} valueClassName="text-3xl font-black text-white" />
                 <StatTile label={t("taskCard.deadline")} value={formatDate(bounty.deadline)} valueClassName="text-base font-bold text-white/70" />
                 <StatTile label={t("taskCard.timeRemaining")} value={formatRemainingTime(bounty.deadline, currentLang)} valueClassName={bounty.status === "expired" ? "text-2xl font-black text-white/10" : "text-2xl font-black text-[#9CFF57] shadow-sm"} />
               </div>
+            </aside>
+          </div>
 
-              {bounty.note && (
-                <div className="relative border-l-4 border-[#ff5a1f]/20 bg-white/[0.02] p-8 transition-colors hover:bg-white/[0.04]">
-                  <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.4em] text-white/25">{t("createBounty.remarks")}</div>
-                  <div className="font-mono text-[16px] leading-[1.6] text-white/50 italic">"{bounty.note}"</div>
+          <div className={`grid gap-8 pt-10 ${bounty.note ? "lg:grid-cols-[1fr_440px] xl:gap-20" : ""}`}>
+            <div className="space-y-6 border border-white/10 bg-white/[0.03] p-8">
+              <div className="flex items-center justify-between gap-4">
+                <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/20">
+                  {isInsurance ? t("taskCard.triggerCondition") : t("taskCard.progress")}
+                </div>
+                <div className="font-mono text-sm font-bold tracking-widest text-white/90">
+                  {isInsurance ? fm("taskCard.futureKillerHint", { insured: bounty.targetLabel, uid: targetUid }) : fm("taskCard.killProgress", { completed: bounty.completedKills, total: bounty.killCount })}
+                </div>
+              </div>
+              {!isInsurance && (
+                <div className="h-2 overflow-hidden bg-white/5 ring-1 ring-white/10">
+                  <div
+                    className="h-full bg-[#ff5a1f] transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(255,90,31,0.6)]"
+                    style={{ width: `${progressPercent}%` }}
+                  />
                 </div>
               )}
-            </aside>
+            </div>
+
+            {bounty.note ? (
+              <div className="relative border border-white/10 bg-white/[0.02] p-8 transition-colors hover:bg-white/[0.04]">
+                <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.4em] text-white/25">{t("createBounty.remarks")}</div>
+                <div className="font-mono text-[16px] leading-[1.6] text-white/50 italic">"{bounty.note}"</div>
+              </div>
+            ) : null}
           </div>
         </div>
 

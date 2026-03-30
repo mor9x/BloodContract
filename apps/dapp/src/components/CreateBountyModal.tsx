@@ -8,6 +8,7 @@ export type CreateBountyFormValue = {
   targetUID: string;
   rewardAmount: string;
   token: SupportedToken["symbol"];
+  lossType: "ship" | "building";
   killCount: number;
   timeframeDays: number;
   isFutureKiller: boolean;
@@ -28,6 +29,7 @@ const initialForm: CreateBountyFormValue = {
   targetUID: "",
   rewardAmount: "",
   token: "SUI",
+  lossType: "ship",
   killCount: 1,
   timeframeDays: 7,
   isFutureKiller: false,
@@ -182,13 +184,6 @@ export function CreateBountyModal({
 
           <form className="app-stack-lg px-7 py-7 md:px-8 md:py-8" onSubmit={handleSubmit}>
             <div className="app-stack-md">
-            <div className="app-panel-inset app-stack-xs">
-              <div className="text-white/70">{t("wallet.selectedRole")}</div>
-              <div className="font-mono text-sm text-white">
-                {selectedCharacter?.metadata.name ?? "--"} / {selectedCharacter?.itemId ?? "--"}
-              </div>
-            </div>
-
             <div className="app-panel-inset">
               <label className="flex flex-1 cursor-pointer items-center gap-3">
                 <div className="toggle-switch">
@@ -201,6 +196,15 @@ export function CreateBountyModal({
                 </div>
               </label>
             </div>
+
+            {formData.isFutureKiller ? (
+              <div className="app-panel-inset app-stack-xs">
+                <div className="text-white/70">{t("wallet.selectedRole")}</div>
+                <div className="font-mono text-sm text-white">
+                  {selectedCharacter?.metadata.name ?? "--"} / {selectedCharacter?.itemId ?? "--"}
+                </div>
+              </div>
+            ) : null}
 
             <div>
               <label className="mb-2 block text-sm font-light tracking-wide text-white/70">{t("createBounty.targetUID")}</label>
@@ -278,6 +282,26 @@ export function CreateBountyModal({
                   />
                 </div>
                 {errors.rewardAmount ? <p className="mt-1.5 font-mono text-xs text-[#FF0000]">{errors.rewardAmount}</p> : null}
+              </div>
+
+              <div>
+                <label className="mb-2.5 block text-sm font-light tracking-wide text-white/70">{t("createBounty.lossType")}</label>
+                <div className="flex gap-2">
+                  {(["ship", "building"] as const).map((lossType) => (
+                    <button
+                      key={lossType}
+                      onClick={() => updateField("lossType", lossType)}
+                      type="button"
+                      className={`flex-1 border px-3 py-3.5 font-mono text-sm transition-all duration-300 ${
+                        formData.lossType === lossType
+                          ? "border-[#FF0000] bg-[#FF0000] text-black shadow-[0_0_12px_rgba(255,0,0,0.3)]"
+                          : "border-white/10 bg-white/5 text-white/50 hover:border-white/20"
+                      }`}
+                    >
+                      {t(`createBounty.lossType${lossType === "ship" ? "Ship" : "Building"}`)}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

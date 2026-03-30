@@ -234,6 +234,7 @@ export function HomePage() {
 
     const token = supportedTokens.find((entry) => entry.symbol === form.token);
     if (!token) throw new Error(`Unsupported token ${form.token}`);
+    const selectedLossFilter = form.lossType === "building" ? LOSS_FILTER.structure : LOSS_FILTER.ship;
 
     const rewardAmount = parseDisplayAmountToAtomicUnits(form.rewardAmount, token);
 
@@ -248,7 +249,7 @@ export function HomePage() {
           amount: rewardAmount,
           posterCharacterObjectId: selectedMirrorCharacter.objectId,
           durationDays: form.timeframeDays,
-          lossFilter: LOSS_FILTER.any,
+          lossFilter: selectedLossFilter,
           note: form.remarks,
           spawnMode: form.killCount > 1 ? SPAWN_MODE.multi : SPAWN_MODE.single,
           spawnTargetKills: form.killCount > 1 ? form.killCount : 0
@@ -281,7 +282,7 @@ export function HomePage() {
           posterCharacterObjectId: selectedMirrorCharacter.objectId,
           targetCharacterObjectId: resolvedTarget.objectId,
           durationDays: form.timeframeDays,
-          lossFilter: LOSS_FILTER.any,
+          lossFilter: selectedLossFilter,
           note: form.remarks,
           targetKills: form.killCount
         })
@@ -300,7 +301,7 @@ export function HomePage() {
         posterCharacterObjectId: selectedMirrorCharacter.objectId,
         targetCharacterObjectId: resolvedTarget.objectId,
         durationDays: form.timeframeDays,
-        lossFilter: LOSS_FILTER.any,
+        lossFilter: selectedLossFilter,
         note: form.remarks
       })
     );
