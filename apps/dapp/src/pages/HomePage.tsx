@@ -29,7 +29,7 @@ import { useAppConnection } from "../hooks/useAppConnection";
 import { useMirrorCharacter } from "../hooks/useMirrorCharacter";
 import { useWalletCharacters } from "../hooks/useWalletCharacters";
 import type { BountyCardModel } from "../lib/bounty-view";
-import { readClient } from "../lib/frontier";
+import { frontierClient, readClient } from "../lib/frontier";
 import { getTranslation, loadLanguagePreference, saveLanguagePreference, toggleLanguage } from "../lib/language";
 
 const emptyCharacters: WalletCharacter[] = [];
@@ -141,13 +141,17 @@ export function HomePage() {
     ]);
   }
 
-  function extractTransactionDigest(result: unknown) {
+  function extractTransactionDigest(result: unknown): string | null {
     if (!result || typeof result !== "object") {
       return null;
     }
 
     const record = result as {
       digest?: unknown;
+      transactionDigest?: unknown;
+      data?: unknown;
+      result?: unknown;
+      transaction?: { digest?: unknown } | null;
       effects?: { transactionDigest?: unknown } | null;
     };
 
@@ -155,8 +159,54 @@ export function HomePage() {
       return record.digest;
     }
 
+    if (typeof record.transactionDigest === "string" && record.transactionDigest.length > 0) {
+      return record.transactionDigest;
+    }
+
+    if (typeof record.transaction?.digest === "string" && record.transaction.digest.length > 0) {
+      return record.transaction.digest;
+    }
+
     if (typeof record.effects?.transactionDigest === "string" && record.effects.transactionDigest.length > 0) {
       return record.effects.transactionDigest;
+    }
+
+    if (record.data) {
+      const nestedDataDigest = extractTransactionDigest(record.data);
+      if (nestedDataDigest) {
+        return nestedDataDigest;
+      }
+    }
+
+    if (record.result) {
+      const nestedResultDigest = extractTransactionDigest(record.result);
+      if (nestedResultDigest) {
+        return nestedResultDigest;
+      }
+    }
+
+    return null;
+  }
+
+  async function resolveKillmailTransactionDigest(result: unknown, killmailItemId: number): Promise<string | null> {
+    const immediateDigest = extractTransactionDigest(result);
+    if (immediateDigest) {
+      return immediateDigest;
+    }
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const page = await frontierClient.queryKillmailEvents({
+        packageId: environment.simulationWorldPackageId,
+        first: 20
+      });
+      const matchedEvent = page.nodes.find((event: { killmailItemId: number | null; digest: string | null }) =>
+        event.killmailItemId === killmailItemId && Boolean(event.digest)
+      );
+      if (matchedEvent?.digest) {
+        return matchedEvent.digest;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 800));
     }
 
     return null;
@@ -305,6 +355,7 @@ export function HomePage() {
 
   async function handleEmitKillmail(form: KillmailFormValue) {
     if (!selectedMirrorCharacter) throw new Error("Simulation mirror character is required");
+    const killmailItemId = Number(form.killmailItemId);
 
     const result = await executeTransaction("emit-killmail", async () =>
       Promise.resolve(
@@ -313,7 +364,7 @@ export function HomePage() {
           killmailRegistryId: environment.simulationWorldKillmailRegistryId,
           adminAclId: environment.simulationWorldAdminAclId,
           reportedByCharacterObjectId: selectedMirrorCharacter.objectId,
-          itemId: Number(form.killmailItemId),
+          itemId: killmailItemId,
           killerId: Number(form.killerId),
           victimId: Number(form.victimId),
           killTimestamp: Number(form.killTimestamp),
@@ -323,7 +374,7 @@ export function HomePage() {
       )
     );
 
-    return extractTransactionDigest(result);
+    return resolveKillmailTransactionDigest(result, killmailItemId);
   }
 
   return (

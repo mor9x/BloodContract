@@ -87,6 +87,10 @@ const GAME_CONFIG = {
   starCount: 110
 } as const;
 
+function getExplorerTransactionUrl(transactionDigest: string) {
+  return `https://suiscan.xyz/testnet/tx/${transactionDigest}`;
+}
+
 function isPositiveIntegerString(value: string) {
   return /^[1-9]\d*$/.test(value);
 }
@@ -822,14 +826,12 @@ export function KillmailControlPanel({
                       <div className="mt-5 grid justify-center gap-3">
                         <p className="font-mono text-xs text-[#8dffc0]">{t("killmail.emitSuccess")}</p>
                         {transactionDigest ? (
-                          <a
-                            className="btn-secondary px-5 py-3 text-sm"
-                            href={`https://suiscan.xyz/testnet/tx/${transactionDigest}`}
-                            rel="noreferrer"
-                            target="_blank"
-                          >
-                            {t("killmail.viewOnSuiscan")}
-                          </a>
+                          <div className="app-panel-inset app-stack-xs max-w-full px-4 py-3 text-left">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                              {t("killmail.transactionHash")}
+                            </div>
+                            <div className="break-all font-mono text-xs text-white/75">{transactionDigest}</div>
+                          </div>
                         ) : null}
                       </div>
                     ) : null}
@@ -859,6 +861,16 @@ export function KillmailControlPanel({
                           {t("killmail.startDuel")}
                         </button>
                       )}
+                      {submissionPhase === "success" && transactionDigest ? (
+                        <a
+                          className="btn-secondary px-5 py-3 text-sm"
+                          href={getExplorerTransactionUrl(transactionDigest)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {t("killmail.viewOnExplorer")}
+                        </a>
+                      ) : null}
                       <button className="btn-secondary px-5 py-3 text-sm" onClick={onClose} type="button">
                         {t("common.close")}
                       </button>
