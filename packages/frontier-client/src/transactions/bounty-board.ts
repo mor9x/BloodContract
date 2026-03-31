@@ -42,20 +42,31 @@ async function buildRewardCoin({ client, tx, owner, coinType, amount }: BuildCoi
     return tx.splitCoins(tx.gas, [tx.pure.u64(amount)]);
   }
 
-  const coins = await client.getCoins({
-    owner,
-    coinType
-  });
   const selectedIds: string[] = [];
   let total = 0;
+  let cursor: string | null | undefined = undefined;
 
-  for (const coin of coins.data) {
-    selectedIds.push(coin.coinObjectId);
-    total += Number(coin.balance);
+  do {
+    const coins = await client.getCoins({
+      owner,
+      coinType,
+      cursor
+    });
+
+    for (const coin of coins.data) {
+      selectedIds.push(coin.coinObjectId);
+      total += Number(coin.balance);
+      if (total >= amount) {
+        break;
+      }
+    }
+
     if (total >= amount) {
       break;
     }
-  }
+
+    cursor = coins.hasNextPage ? coins.nextCursor : null;
+  } while (cursor);
 
   if (total < amount || selectedIds.length === 0) {
     throw new Error(`Wallet does not have enough balance for ${coinType}`);

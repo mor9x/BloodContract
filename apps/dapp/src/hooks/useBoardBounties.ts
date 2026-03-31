@@ -3,7 +3,30 @@ import { useQuery } from "@tanstack/react-query";
 import { frontierClient } from "../lib/frontier";
 import { snapshotToCards } from "../lib/bounty-view";
 
+const FUTURE_KILLER_CACHE_TTL_MS = 15_000;
+
+let futureKillerBountyCache:
+  | {
+      packageId: string;
+      fetchedAtMs: number;
+      ids: Set<string>;
+    }
+  | null = null;
+
 async function getFutureKillerBountyIds(packageId: string) {
+  if (!packageId) {
+    return new Set<string>();
+  }
+
+  const nowMs = Date.now();
+  if (
+    futureKillerBountyCache &&
+    futureKillerBountyCache.packageId === packageId &&
+    nowMs - futureKillerBountyCache.fetchedAtMs < FUTURE_KILLER_CACHE_TTL_MS
+  ) {
+    return new Set(futureKillerBountyCache.ids);
+  }
+
   const futureKillerBountyIds = new Set<string>();
   let after: string | null = null;
 
@@ -31,6 +54,12 @@ async function getFutureKillerBountyIds(packageId: string) {
 
     after = page.pageInfo.endCursor;
   }
+
+  futureKillerBountyCache = {
+    packageId,
+    fetchedAtMs: nowMs,
+    ids: new Set(futureKillerBountyIds)
+  };
 
   return futureKillerBountyIds;
 }

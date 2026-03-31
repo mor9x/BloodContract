@@ -4,6 +4,7 @@ import { nextCursor, toConnectionPage } from "../src/graphql/pagination";
 import { getBountyBoardEventType, queryBountyBoardEvents } from "../src/queries/bounty-board";
 import { getBoardObjectState, getBoardRegistrySnapshot, getBoardState } from "../src/queries/board-state";
 import { getKillmailCreatedEventType, queryKillmailEvents } from "../src/queries/killmail";
+import { buildCreateSingleBountyTx } from "../src/transactions/bounty-board";
 
 describe("frontier-client", () => {
   test("returns the next cursor only when another page exists", () => {
@@ -459,5 +460,53 @@ describe("frontier-client", () => {
         process.env.HTTPS_PROXY = previousHttpsProxy;
       }
     }
+  });
+
+  test("keeps paginating wallet coins until the bounty funding amount is covered", async () => {
+    const cursors: Array<string | null | undefined> = [];
+    const client = {
+      getCoins: async ({ cursor }: { cursor?: string | null }) => {
+        cursors.push(cursor);
+
+        if (!cursor) {
+          return {
+            data: [
+              { coinObjectId: "0xcoin-1", balance: "40" },
+              { coinObjectId: "0xcoin-2", balance: "30" }
+            ],
+            hasNextPage: true,
+            nextCursor: "page-2"
+          };
+        }
+
+        return {
+          data: [{ coinObjectId: "0xcoin-3", balance: "50" }],
+          hasNextPage: false,
+          nextCursor: null
+        };
+      },
+      getObject: async () => {
+        throw new Error("not used");
+      },
+      getCoinMetadata: async () => {
+        throw new Error("not used");
+      },
+      getBalance: async () => {
+        throw new Error("not used");
+      }
+    };
+
+    await buildCreateSingleBountyTx(client, {
+      owner: "0xowner",
+      coinType: "0x2::demo::COIN",
+      amount: 100,
+      posterCharacterObjectId: "0xposter",
+      targetCharacterObjectId: "0xtarget",
+      durationDays: 7,
+      lossFilter: 0,
+      note: ""
+    });
+
+    expect(cursors).toEqual([undefined, "page-2"]);
   });
 });
