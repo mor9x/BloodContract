@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./docs/assets/eve_logo.png" alt="Blood Contract logo" width="420" />
+</p>
+
 # Blood Contract
 
 Blood Contract is a player-driven bounty system for EVE Frontier. A player locks rewards into an on-chain contract, points that contract at a target, chooses whether the objective is ship kills or structure kills, sets how many kills are required, and defines how long the contract stays live. When a hunter satisfies the conditions, the reward can be claimed directly from the contract.
